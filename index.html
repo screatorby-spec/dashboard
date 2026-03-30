@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>매입 대시보드 | UPM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy:   #1F3864;
+    --blue:   #2E74B5;
+    --b2b:    #1A5276;
+    --c2b:    #117A65;
+    --b2b-lt: #D4E6F1;
+    --c2b-lt: #D1F2EB;
+    --grey:   #F4F6F9;
+    --card:   #FFFFFF;
+    --border: #E0E6EF;
+    --text:   #2C3E50;
+    --muted:  #6C757D;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif;
+         background: var(--grey); color: var(--text); }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg,var(--navy) 0%,#2E4A80 100%);
+    color:#fff; padding:18px 32px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 12px rgba(31,56,100,.35); flex-wrap:wrap; gap:12px;
+  }
+  .header-left h1 { font-size:19px; font-weight:800; letter-spacing:-.3px; }
+  .header-left p  { font-size:11px; color:#9BB5D8; margin-top:2px; }
+  .header-right { display:flex; align-items:center; gap:10px; }
+  .month-select {
+    background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+    color:#fff; border-radius:20px; padding:6px 16px; font-size:12px;
+    cursor:pointer; font-family:inherit; font-weight:600; outline:none;
+  }
+  .month-select option { background:var(--navy); color:#fff; }
+
+  /* Filter bar */
+  .filter-bar {
+    background:#fff; border-bottom:1px solid var(--border);
+    padding:10px 32px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .filter-bar label { font-size:11px; color:var(--muted); font-weight:700; }
+  .filter-btn {
+    border:1.5px solid var(--border); background:#fff; border-radius:20px;
+    padding:4px 16px; font-size:12px; cursor:pointer; transition:all .18s;
+    font-family:inherit; color:var(--text); font-weight:500;
+  }
+  .filter-btn:hover { border-color:var(--blue); color:var(--blue); }
+  .filter-btn.active        { background:var(--navy); border-color:var(--navy); color:#fff; font-weight:700; }
+  .filter-btn.b2b.active    { background:var(--b2b);  border-color:var(--b2b); }
+  .filter-btn.c2b.active    { background:var(--c2b);  border-color:var(--c2b); }
+
+  /* Main */
+  .main { padding:22px 32px; max-width:1440px; margin:0 auto; }
+
+  /* KPI */
+  .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+  .kpi-card {
+    background:var(--card); border-radius:12px; padding:18px 22px;
+    border:1px solid var(--border); box-shadow:0 1px 6px rgba(0,0,0,.05);
+    position:relative; overflow:hidden;
+  }
+  .kpi-card::before {
+    content:''; position:absolute; left:0; top:0; bottom:0;
+    width:4px; border-radius:12px 0 0 12px;
+  }
+  .kpi-card.total::before { background:var(--blue); }
+  .kpi-card.b2b::before   { background:var(--b2b); }
+  .kpi-card.c2b::before   { background:var(--c2b); }
+  .kpi-label { font-size:10px; font-weight:800; color:var(--muted);
+               text-transform:uppercase; letter-spacing:.6px; margin-bottom:8px; }
+  .kpi-qty   { font-size:28px; font-weight:900; color:var(--navy); line-height:1; }
+  .kpi-cost  { font-size:13px; font-weight:700; color:var(--blue); margin-top:5px; }
+  .kpi-badge {
+    position:absolute; right:16px; top:16px; font-size:10px;
+    border-radius:10px; padding:2px 9px; font-weight:700;
+  }
+  .kpi-card.b2b .kpi-badge { background:var(--b2b-lt); color:var(--b2b); }
+  .kpi-card.c2b .kpi-badge { background:var(--c2b-lt); color:var(--c2b); }
+  .kpi-sub { font-size:10px; color:var(--muted); margin-top:5px; }
+
+  /* Charts */
+  .charts-row { display:grid; grid-template-columns:1fr 1fr 1.1fr; gap:14px; margin-bottom:20px; }
+  .chart-card {
+    background:var(--card); border-radius:12px; padding:18px 20px;
+    border:1px solid var(--border); box-shadow:0 1px 6px rgba(0,0,0,.05);
+  }
+  .chart-card h3 {
+    font-size:12px; font-weight:700; color:var(--navy);
+    margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:6px;
+  }
+  .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .chart-wrap { position:relative; height:210px; }
+
+  /* Section */
+  .section-card {
+    background:var(--card); border-radius:12px;
+    border:1px solid var(--border); box-shadow:0 1px 6px rgba(0,0,0,.05);
+    margin-bottom:20px; overflow:hidden;
+  }
+  .section-hdr {
+    background:var(--navy); padding:13px 22px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  }
+  .section-hdr h3 { font-size:12px; color:#fff; font-weight:700; }
+  .tab-group { display:flex; gap:5px; }
+  .tab-btn {
+    background:rgba(255,255,255,.14); border:none; border-radius:6px;
+    color:#CBD8EE; padding:4px 13px; font-size:11px; cursor:pointer;
+    font-family:inherit; font-weight:600; transition:all .18s;
+  }
+  .tab-btn.active           { background:#fff; color:var(--navy); }
+  .tab-btn:hover:not(.active){ background:rgba(255,255,255,.25); color:#fff; }
+
+  /* Table */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead th {
+    background:#EEF3FB; color:var(--navy); font-weight:700;
+    padding:9px 14px; text-align:center; border-bottom:2px solid var(--border);
+    white-space:nowrap;
+  }
+  thead th:first-child, thead th:nth-child(2) { text-align:left; }
+  tbody tr { border-bottom:1px solid #F0F3F8; transition:background .12s; }
+  tbody tr:hover { background:#F0F6FF; }
+  tbody td { padding:8px 14px; }
+  td.num    { text-align:right; font-variant-numeric:tabular-nums; }
+  td.center { text-align:center; }
+  .row-b2b td:first-child { border-left:3px solid var(--b2b); }
+  .row-c2b td:first-child { border-left:3px solid var(--c2b); }
+  .subtotal-row td { background:#EEF3FB; font-weight:700; color:var(--navy); }
+  .grand-row    td { background:var(--navy); color:#fff; font-weight:700; }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  /* Bar */
+  .bar-w { display:flex; align-items:center; gap:7px; }
+  .bar-bg { flex:1; height:5px; background:#E8EDF5; border-radius:3px; min-width:50px; }
+  .bar-fill { height:5px; border-radius:3px; }
+  .bar-pct { font-size:10px; color:var(--muted); min-width:36px; text-align:right; }
+
+  /* Badge */
+  .badge { display:inline-block; border-radius:9px; padding:2px 8px;
+           font-size:10px; font-weight:700; white-space:nowrap; }
+  .b-b2b { background:var(--b2b-lt); color:var(--b2b); }
+  .b-c2b { background:var(--c2b-lt); color:var(--c2b); }
+  .b-sm  { background:#EBF5FB; color:#1A6FAB; }
+  .b-tb  { background:#FEF9E7; color:#B7770D; }
+
+  /* Loading */
+  .loading {
+    display:flex; align-items:center; justify-content:center;
+    height:200px; color:var(--muted); font-size:14px; gap:10px;
+  }
+  .spinner {
+    width:20px; height:20px; border:2px solid var(--border);
+    border-top-color:var(--blue); border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* Responsive */
+  @media(max-width:1000px){ .charts-row { grid-template-columns:1fr 1fr; } }
+  @media(max-width:700px){
+    .kpi-row    { grid-template-columns:1fr; }
+    .charts-row { grid-template-columns:1fr; }
+    .main       { padding:14px; }
+    .header     { padding:14px 18px; }
+    .filter-bar { padding:8px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>📦 매입 현황 대시보드</h1>
+    <p>UPM · 중고 상품 매입 분석</p>
+  </div>
+  <div class="header-right">
+    <select class="month-select" id="monthSelect" onchange="loadMonth(this.value)">
+      <option value="">로딩 중...</option>
+    </select>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <label>매입 구분</label>
+  <button class="filter-btn active"     onclick="setFilter('all',this)">전체</button>
+  <button class="filter-btn b2b"        onclick="setFilter('B2B',this)">🏢 업체매입(B2B)</button>
+  <button class="filter-btn c2b"        onclick="setFilter('C2B',this)">👤 개인매입(C2B)</button>
+</div>
+
+<div class="main">
+  <div id="app">
+    <div class="loading"><div class="spinner"></div> 데이터 로딩 중...</div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let DATA          = null;
+let activeFilter  = 'all';
+let activeTab     = 'd1';
+let barInst       = null;
+let pieInst       = null;
+let trendInst     = null;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmt  = n => Number(n).toLocaleString('ko-KR');
+const fmtW = n => '₩' + Number(n).toLocaleString('ko-KR');
+const pct  = n => Number(n).toFixed(1) + '%';
+
+function barHtml(val, color) {
+  const w = Math.min(Math.round(val), 100);
+  return `<div class="bar-w">
+    <div class="bar-bg"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
+    <span class="bar-pct">${pct(val)}</span></div>`;
+}
+const badgeGrp = nm => nm.includes('B2B')
+  ? '<span class="badge b-b2b">B2B</span>'
+  : '<span class="badge b-c2b">C2B</span>';
+const badgeCat = c => c === '스마트폰'
+  ? '<span class="badge b-sm">스마트폰</span>'
+  : '<span class="badge b-tb">태블릿</span>';
+
+function destroyCharts() {
+  [barInst, pieInst, trendInst].forEach(c => c && c.destroy());
+  barInst = pieInst = trendInst = null;
+}
+
+// ── Load Manifest → populate month selector ────────────────────────────────
+async function init() {
+  try {
+    const res  = await fetch('manifest.json');
+    const mani = await res.json();
+    const sel  = document.getElementById('monthSelect');
+    sel.innerHTML = mani.months
+      .slice().reverse()
+      .map(m => `<option value="${m}">${m.replace('-','년 ')}월</option>`)
+      .join('');
+    sel.value = mani.latest;
+    await loadMonth(mani.latest);
+  } catch(e) {
+    document.getElementById('app').innerHTML =
+      `<div class="loading">⚠️ 데이터를 불러올 수 없습니다. (${e.message})</div>`;
+  }
+}
+
+// ── Load month data ────────────────────────────────────────────────────────
+async function loadMonth(month) {
+  document.getElementById('app').innerHTML =
+    '<div class="loading"><div class="spinner"></div> 데이터 로딩 중...</div>';
+  destroyCharts();
+  try {
+    const res = await fetch(`${month}.json`);
+    DATA = await res.json();
+    activeFilter = 'all';
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn:first-of-type').classList.add('active');
+    renderAll();
+  } catch(e) {
+    document.getElementById('app').innerHTML =
+      `<div class="loading">⚠️ ${month} 데이터를 불러올 수 없습니다.</div>`;
+  }
+}
+
+// ── Filter ────────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  destroyCharts();
+  renderAll();
+}
+
+function filteredD1() {
+  if (activeFilter === 'all') return DATA.d1;
+  const k = activeFilter === 'B2B' ? '업체매입(B2B)' : '개인매입(C2B)';
+  return DATA.d1.filter(r => r['매입구분명'] === k);
+}
+function filteredD2() {
+  if (activeFilter === 'all') return DATA.d2;
+  const k = activeFilter === 'B2B' ? '업체매입(B2B)' : '개인매입(C2B)';
+  return DATA.d2.filter(r => r['매입구분명'] === k);
+}
+function filteredSrc() {
+  if (activeFilter === 'all') return DATA.src_cost;
+  const b2bSet = new Set(['주식회사 해피월드','주식회사 텐마일','여진','법인카드(9952/세티즌)','법인카드(9952/쿠팡)']);
+  return DATA.src_cost.filter(r => activeFilter === 'B2B' ? b2bSet.has(r['매입처']) : !b2bSet.has(r['매입처']));
+}
+
+// ── Render All ────────────────────────────────────────────────────────────
+function renderAll() {
+  const kpi = DATA.kpi;
+  document.getElementById('app').innerHTML = `
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi-card total">
+        <div class="kpi-label">📊 전체 매입</div>
+        <div class="kpi-qty">${fmt(kpi.total_qty)}<small style="font-size:14px;font-weight:600"> 개</small></div>
+        <div class="kpi-cost">${fmtW(kpi.total_cost)}</div>
+        <div class="kpi-sub">${DATA.period.replace('-','년 ')}월</div>
+      </div>
+      <div class="kpi-card b2b">
+        <div class="kpi-label">🏢 업체매입 (B2B)</div>
+        <div class="kpi-qty">${fmt(kpi.b2b_qty)}<small style="font-size:14px;font-weight:600"> 개</small></div>
+        <div class="kpi-cost">${fmtW(kpi.b2b_cost)}</div>
+        <span class="kpi-badge">수량 ${(kpi.b2b_qty/kpi.total_qty*100).toFixed(1)}% · 원가 ${(kpi.b2b_cost/kpi.total_cost*100).toFixed(1)}%</span>
+        <div class="kpi-sub">5개 매입처</div>
+      </div>
+      <div class="kpi-card c2b">
+        <div class="kpi-label">👤 개인매입 (C2B)</div>
+        <div class="kpi-qty">${fmt(kpi.c2b_qty)}<small style="font-size:14px;font-weight:600"> 개</small></div>
+        <div class="kpi-cost">${fmtW(kpi.c2b_cost)}</div>
+        <span class="kpi-badge">수량 ${(kpi.c2b_qty/kpi.total_qty*100).toFixed(1)}% · 원가 ${(kpi.c2b_cost/kpi.total_cost*100).toFixed(1)}%</span>
+        <div class="kpi-sub">4개 매입처</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3><span class="dot" style="background:var(--blue)"></span>매입처별 실매입가</h3>
+        <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3><span class="dot" style="background:var(--c2b)"></span>B2B vs C2B 수량 비중</h3>
+        <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3><span class="dot" style="background:#8E44AD"></span>일별 매입 수량 추이</h3>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="section-card">
+      <div class="section-hdr">
+        <h3 id="secTitle">▶ [Depth 1] 매입 구분별 · 매입처별 수량 및 원가</h3>
+        <div class="tab-group">
+          <button class="tab-btn active" onclick="switchTab('d1',this)">Depth 1</button>
+          <button class="tab-btn"       onclick="switchTab('d2',this)">Depth 2 (카테고리)</button>
+        </div>
+      </div>
+      <div class="tab-content active" id="tab-d1">
+        <div class="table-wrap">
+          <table><thead><tr>
+            <th>매입 구분</th><th>매입처</th>
+            <th>수량 (개)</th><th>원가 (원)</th>
+            <th>수량 비중</th><th>원가 비중</th>
+          </tr></thead><tbody id="tbody-d1"></tbody></table>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-d2">
+        <div class="table-wrap">
+          <table><thead><tr>
+            <th>매입 구분</th><th>매입처</th><th>카테고리</th>
+            <th>수량 (개)</th><th>원가 (원)</th><th>원가 비중</th>
+          </tr></thead><tbody id="tbody-d2"></tbody></table>
+        </div>
+      </div>
+    </div>
+  `;
+  renderD1(); renderD2(); buildCharts();
+}
+
+// ── Tables ─────────────────────────────────────────────────────────────────
+function renderD1() {
+  const rows = filteredD1();
+  const tQ = rows.reduce((s,r)=>s+r['수량'],0);
+  const tC = rows.reduce((s,r)=>s+r['원가'],0);
+  const groups = {};
+  rows.forEach(r=>{ const g=r['매입구분명']; if(!groups[g])groups[g]={qty:0,cost:0}; groups[g].qty+=r['수량']; groups[g].cost+=r['원가']; });
+
+  let html=''; let prev=null;
+  rows.forEach(r=>{
+    const g=r['매입구분명']; const isB=g.includes('B2B');
+    if(prev && prev!==g){
+      const sg=groups[prev]; const pb=prev.includes('B2B');
+      html+=`<tr class="subtotal-row">
+        <td colspan="2" style="padding-left:18px">${badgeGrp(prev)} ${prev} 소계</td>
+        <td class="num">${fmt(sg.qty)}</td><td class="num">${fmtW(sg.cost)}</td>
+        <td>${barHtml(sg.qty/tQ*100,pb?'#1A5276':'#117A65')}</td>
+        <td>${barHtml(sg.cost/tC*100,pb?'#1A5276':'#117A65')}</td></tr>`;
+    }
+    html+=`<tr class="${isB?'row-b2b':'row-c2b'}">
+      <td>${badgeGrp(g)}&nbsp;${g}</td><td>${r['매입처']}</td>
+      <td class="num">${fmt(r['수량'])}</td><td class="num">${fmtW(r['원가'])}</td>
+      <td>${barHtml(r['수량비중'],isB?'#1A5276':'#117A65')}</td>
+      <td>${barHtml(r['원가비중'],isB?'#1A5276':'#117A65')}</td></tr>`;
+    prev=g;
+  });
+  if(prev){
+    const sg=groups[prev]; const pb=prev.includes('B2B');
+    if(Object.keys(groups).length>1){
+      html+=`<tr class="subtotal-row">
+        <td colspan="2" style="padding-left:18px">${badgeGrp(prev)} ${prev} 소계</td>
+        <td class="num">${fmt(sg.qty)}</td><td class="num">${fmtW(sg.cost)}</td>
+        <td>${barHtml(sg.qty/tQ*100,pb?'#1A5276':'#117A65')}</td>
+        <td>${barHtml(sg.cost/tC*100,pb?'#1A5276':'#117A65')}</td></tr>`;
+    }
+  }
+  html+=`<tr class="grand-row">
+    <td colspan="2" style="padding-left:18px">합계</td>
+    <td class="num">${fmt(tQ)}</td><td class="num">${fmtW(tC)}</td>
+    <td class="center">100.0%</td><td class="center">100.0%</td></tr>`;
+  document.getElementById('tbody-d1').innerHTML = html;
+}
+
+function renderD2() {
+  const rows = filteredD2();
+  const tQ = rows.reduce((s,r)=>s+r['수량'],0);
+  const tC = rows.reduce((s,r)=>s+r['원가'],0);
+  let html=''; let prev=null;
+  rows.forEach(r=>{
+    const g=r['매입구분명']; const isB=g.includes('B2B');
+    if(prev && prev!==g) html+=`<tr><td colspan="6" style="height:5px;background:#E8EDF5;padding:0"></td></tr>`;
+    html+=`<tr class="${isB?'row-b2b':'row-c2b'}">
+      <td>${badgeGrp(g)}&nbsp;${g}</td><td>${r['매입처']}</td>
+      <td class="center">${badgeCat(r['카테고리'])}</td>
+      <td class="num">${fmt(r['수량'])}</td><td class="num">${fmtW(r['원가'])}</td>
+      <td>${barHtml(r['원가']/tC*100,isB?'#1A5276':'#117A65')}</td></tr>`;
+    prev=g;
+  });
+  html+=`<tr class="grand-row">
+    <td colspan="3" style="padding-left:18px">합계</td>
+    <td class="num">${fmt(tQ)}</td><td class="num">${fmtW(tC)}</td>
+    <td class="center">100.0%</td></tr>`;
+  document.getElementById('tbody-d2').innerHTML = html;
+}
+
+// ── Charts ─────────────────────────────────────────────────────────────────
+function buildCharts() {
+  const kpi = DATA.kpi;
+  const src  = filteredSrc();
+  const b2bSet = new Set(['주식회사 해피월드','주식회사 텐마일','여진','법인카드(9952/세티즌)','법인카드(9952/쿠팡)']);
+
+  // Bar
+  barInst = new Chart(document.getElementById('barChart').getContext('2d'), {
+    type:'bar',
+    data:{
+      labels: src.map(r=>r['매입처']),
+      datasets:[{
+        label:'실매입가',
+        data: src.map(r=>r['원가']),
+        backgroundColor: src.map(r=> b2bSet.has(r['매입처']) ? '#1A5276' : '#117A65'),
+        borderRadius:4, borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'₩'+c.raw.toLocaleString('ko-KR')}} },
+      scales:{
+        y:{ ticks:{callback:v=>v>=1e8?(v/1e8).toFixed(0)+'억':v>=1e4?(v/1e4).toFixed(0)+'만':v, font:{size:10}}, grid:{color:'#F0F3F8'} },
+        x:{ ticks:{font:{size:10},maxRotation:30}, grid:{display:false} }
+      }
+    }
+  });
+
+  // Pie
+  const pData = activeFilter==='B2B' ? [kpi.b2b_qty,0]
+              : activeFilter==='C2B' ? [0,kpi.c2b_qty]
+              : [kpi.b2b_qty,kpi.c2b_qty];
+  pieInst = new Chart(document.getElementById('pieChart').getContext('2d'), {
+    type:'doughnut',
+    data:{
+      labels:['업체매입(B2B)','개인매입(C2B)'],
+      datasets:[{ data:pData, backgroundColor:['#1A5276','#117A65'], borderWidth:3, borderColor:'#fff', hoverOffset:8 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'60%',
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:11},padding:12,usePointStyle:true}},
+        tooltip:{callbacks:{label:c=>{const v=c.raw; const p=(v/kpi.total_qty*100).toFixed(1); return ` ${v.toLocaleString()}개 (${p}%)`;  }}}
+      }
+    }
+  });
+
+  // Trend
+  trendInst = new Chart(document.getElementById('trendChart').getContext('2d'), {
+    type:'line',
+    data:{
+      labels: DATA.daily.map(r=>r['매입일_str']),
+      datasets:[{
+        label:'일별 매입 수량',
+        data: DATA.daily.map(r=>r['수량']),
+        borderColor:'#8E44AD', backgroundColor:'rgba(142,68,173,.1)',
+        pointBackgroundColor:'#8E44AD', pointRadius:4, fill:true, tension:.35
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        y:{ ticks:{font:{size:10}}, grid:{color:'#F0F3F8'} },
+        x:{ ticks:{font:{size:10},maxRotation:40}, grid:{display:false} }
+      }
+    }
+  });
+}
+
+// ── Tab switch ─────────────────────────────────────────────────────────────
+function switchTab(tab,btn) {
+  activeTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('secTitle').textContent =
+    tab==='d1' ? '▶ [Depth 1] 매입 구분별 · 매입처별 수량 및 원가'
+               : '▶ [Depth 2] 매입 구분별 · 매입처별 · 카테고리별 수량 및 원가';
+}
+
+// ── Start ──────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
