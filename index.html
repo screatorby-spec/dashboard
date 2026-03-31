@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 Digital Business Metrics</title>
+<style>
+:root {
+  --navy:#1F3864; --blue:#2E74B5; --pink-hdr:#FFE4E4; --blue-hdr:#E4EEFF;
+  --b2b:#1A5276; --c2b:#117A65; --red:#C0392B; --green:#1E8449;
+  --border:#D0D7E3; --bg:#F2F4F8; --card:#fff; --text:#1a1a2e; --muted:#6C757D;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif;
+     background:var(--bg);color:var(--text);font-size:12px;}
+
+/* ── Header ── */
+.page-header{
+  background:linear-gradient(135deg,var(--navy),#2E4A80);
+  color:#fff;padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  box-shadow:0 2px 10px rgba(31,56,100,.4);
+}
+.page-header h1{font-size:16px;font-weight:800;letter-spacing:-.3px;}
+.page-header p{font-size:10px;color:#9BB5D8;margin-top:2px;}
+.period-badge{
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  border-radius:16px;padding:5px 14px;font-size:11px;font-weight:700;color:#E8F0FF;
+}
+
+/* ── Tab Bar ── */
+.tab-bar{
+  background:#fff;border-bottom:2px solid var(--border);
+  padding:0 24px;display:flex;align-items:flex-end;gap:4px;
+}
+.tab-btn{
+  padding:10px 24px;font-size:13px;font-weight:700;border:none;
+  background:transparent;cursor:pointer;font-family:inherit;
+  color:var(--muted);border-bottom:3px solid transparent;
+  margin-bottom:-2px;transition:all .18s;letter-spacing:-.2px;
+}
+.tab-btn:hover{color:var(--navy);}
+.tab-btn.active.weekly{color:#8B1A1A;border-bottom-color:#E74C3C;}
+.tab-btn.active.monthly{color:#1A3A8B;border-bottom-color:#2E74B5;}
+
+/* ── Tab Views ── */
+.tab-view{display:none;}
+.tab-view.active{display:block;}
+
+/* ── Main ── */
+.main{padding:16px 20px;max-width:1400px;margin:0 auto;}
+
+/* ── KPI Strip ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.kpi{background:var(--card);border-radius:10px;padding:12px 16px;
+     border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.06);
+     position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:10px 0 0 10px;}
+.kpi.k1::before{background:var(--blue);}
+.kpi.k2::before{background:var(--c2b);}
+.kpi.k3::before{background:#8E44AD;}
+.kpi.k4::before{background:#E67E22;}
+.kpi-label{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.kpi-val{font-size:22px;font-weight:900;color:var(--navy);line-height:1;}
+.kpi-sub{font-size:11px;color:var(--blue);font-weight:600;margin-top:4px;}
+.kpi-mom{font-size:10px;margin-top:4px;}
+
+/* ── Two-col grid inside views ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+/* ── Block ── */
+.block{background:var(--card);border-radius:10px;border:1px solid var(--border);
+       box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:14px;}
+.block-title{
+  padding:9px 14px;font-size:11px;font-weight:800;letter-spacing:.3px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.block-title.wk{background:var(--pink-hdr);color:#8B1A1A;}
+.block-title.mn{background:var(--blue-hdr);color:#1A3A8B;}
+.block-title span{font-size:10px;font-weight:600;opacity:.7;}
+
+/* ── Table ── */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{
+  background:#F0F3FA;color:var(--navy);font-weight:700;
+  padding:6px 10px;text-align:right;border-bottom:2px solid var(--border);
+  white-space:nowrap;font-size:11px;
+}
+.tbl th.left{text-align:left;}
+.tbl td{padding:5px 10px;border-bottom:1px solid #EEF1F8;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tbody tr:hover td{background:#F5F8FF;}
+
+/* Row types */
+.r-total td{background:#EEF3FB;font-weight:800;color:var(--navy);}
+.r-sub   td{background:#F7F9FD;font-weight:700;color:#2C3E50;}
+.r-sub   td:first-child{padding-left:10px;}
+.r-det   td{color:var(--muted);}
+.r-det   td:first-child{padding-left:10px;}
+.r-sep   td{background:#E8EDF5;height:3px;padding:0;}
+.r-cum   td{background:#FFFBEE;font-weight:800;color:#7D5A00;}
+.r-prev  td{background:#F7F9FD;color:var(--muted);font-weight:600;}
+
+/* Alignment */
+.n{text-align:right;font-variant-numeric:tabular-nums;}
+.c{text-align:center;}
+
+/* WoW / MoM — 한국식: 상승=빨강, 하락=파랑 */
+td.up{color:#D32F2F !important;font-weight:700 !important;}
+td.dn{color:#1565C0 !important;font-weight:700 !important;}
+.neu{color:var(--muted);}
+
+/* ── Week Selector ── */
+.week-control{
+  display:flex;align-items:center;gap:12px;margin-bottom:14px;
+  background:#fff;border-radius:10px;padding:10px 16px;
+  border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.week-control label{font-size:11px;font-weight:800;color:var(--navy);white-space:nowrap;}
+.week-control select{
+  font-family:inherit;font-size:12px;font-weight:700;
+  color:var(--navy);border:1.5px solid var(--blue);
+  border-radius:6px;padding:5px 12px;background:#F0F5FF;
+  cursor:pointer;outline:none;min-width:90px;
+}
+.week-control select:hover{background:#E4EEFF;}
+.week-control .wk-hint{font-size:10px;color:var(--muted);margin-left:auto;}
+.week-control .wk-range{font-size:11px;color:var(--blue);font-weight:600;}
+
+@media(max-width:900px){
+  .two-col{grid-template-columns:1fr;}
+  .kpi-strip{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="page-header">
+  <div><h1>📊 Digital Business Metrics</h1><p>매입 · 매출 Weekly &amp; Monthly Metrics</p></div>
+  <div class="period-badge">2026-14W · 2026년 03월</div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn weekly active" onclick="switchTab('weekly',this)">📅 Weekly Metrics</button>
+  <button class="tab-btn monthly"       onclick="switchTab('monthly',this)">📆 Monthly Metrics</button>
+</div>
+
+<!-- ══════════ WEEKLY VIEW ══════════ -->
+<div class="tab-view active" id="view-weekly">
+  <div class="main">
+
+    <!-- KPI (Weekly) -->
+    <div class="kpi-strip">
+      <div class="kpi k1">
+        <div class="kpi-label">📦 당주 매입 수량</div>
+        <div class="kpi-val" id="wk-buy-qty">—</div>
+        <div class="kpi-sub" id="wk-buy-cost">—</div>
+        <div class="kpi-mom" id="wk-buy-wow"></div>
+      </div>
+      <div class="kpi k2">
+        <div class="kpi-label">💰 당주 매출액</div>
+        <div class="kpi-val" id="wk-sell-rev">—</div>
+        <div class="kpi-sub" id="wk-sell-profit">—</div>
+        <div class="kpi-mom" id="wk-sell-wow"></div>
+      </div>
+      <div class="kpi k3">
+        <div class="kpi-label">📊 당주 이익률</div>
+        <div class="kpi-val" id="wk-margin">—</div>
+        <div class="kpi-sub" id="wk-margin-sub">—</div>
+        <div class="kpi-mom" id="wk-margin-wow"></div>
+      </div>
+      <div class="kpi k4">
+        <div class="kpi-label">🔄 당주 매입 AOV</div>
+        <div class="kpi-val" id="wk-aov">—</div>
+        <div class="kpi-sub" id="wk-aov-sub">—</div>
+        <div class="kpi-mom" id="wk-aov-wow"></div>
+      </div>
+    </div>
+
+    <!-- Week Selector -->
+    <div class="week-control">
+      <label>📅 기준 주차</label>
+      <select id="week-select" onchange="onWeekChange(this.value)"></select>
+      <span class="wk-hint">선택한 주차 기준으로 이전 2주 데이터 표시</span>
+      <span class="wk-range" id="wk-range-lbl"></span>
+    </div>
+
+    <div class="two-col">
+      <!-- Weekly 매입 -->
+      <div class="block">
+        <div class="block-title wk">📅 [Weekly] 매입 수량 <span id="wk-lbl">2026-13W</span></div>
+        <table class="tbl">
+          <thead><tr>
+            <th class="left" colspan="2">구분</th>
+            <th id="wh2">13W</th><th id="wh1">12W</th><th id="wh0">11W</th>
+            <th>WoW (Q)</th><th>WoW (%)</th>
+          </tr></thead>
+          <tbody id="wb-body"></tbody>
+        </table>
+      </div>
+      <!-- Weekly 매출 -->
+      <div class="block">
+        <div class="block-title wk">📅 [Weekly] 매출 <span id="wk-lbl2">2026-13W</span></div>
+        <table class="tbl">
+          <thead><tr>
+            <th class="left" colspan="2">채널</th>
+            <th>매출액</th><th>총이익</th><th>이익률</th>
+            <th>WoW (P)</th><th>WoW (%)</th>
+          </tr></thead>
+          <tbody id="ws-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Weekly 플로우 -->
+    <div class="block">
+      <div class="block-title wk">📅 [Weekly] 매출 플로우 <span id="wk-flow-lbl"></span></div>
+      <table class="tbl">
+        <thead><tr>
+          <th class="left">형태</th>
+          <th>매출액</th><th>총이익</th><th>이익률</th>
+          <th>WoW (P)</th><th>WoW (%)</th>
+        </tr></thead>
+        <tbody id="wf-body"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ MONTHLY VIEW ══════════ -->
+<div class="tab-view" id="view-monthly">
+  <div class="main">
+
+    <!-- Month Selector -->
+    <div class="week-control">
+      <label>📆 기준 월</label>
+      <select id="month-select" onchange="onMonthChange(this.value)"></select>
+      <span class="wk-hint">선택한 월 기준 전월 대비 MoM 비교</span>
+      <span class="wk-range" id="mn-range-lbl"></span>
+    </div>
+
+    <!-- KPI (Monthly) -->
+    <div class="kpi-strip">
+      <div class="kpi k1">
+        <div class="kpi-label">📦 당월 매입 수량</div>
+        <div class="kpi-val" id="mn-buy-qty">—</div>
+        <div class="kpi-sub" id="mn-buy-cost">—</div>
+        <div class="kpi-mom" id="mn-buy-mom"></div>
+      </div>
+      <div class="kpi k2">
+        <div class="kpi-label">💰 당월 매출액</div>
+        <div class="kpi-val" id="mn-sell-rev">—</div>
+        <div class="kpi-sub" id="mn-sell-profit">—</div>
+        <div class="kpi-mom" id="mn-sell-mom"></div>
+      </div>
+      <div class="kpi k3">
+        <div class="kpi-label">📊 당월 이익률</div>
+        <div class="kpi-val" id="mn-margin">—</div>
+        <div class="kpi-sub" id="mn-margin-sub">—</div>
+        <div class="kpi-mom" id="mn-margin-mom"></div>
+      </div>
+      <div class="kpi k4">
+        <div class="kpi-label">🔄 당월 매입 AOV</div>
+        <div class="kpi-val" id="mn-aov">—</div>
+        <div class="kpi-sub" id="mn-aov-sub">—</div>
+        <div class="kpi-mom" id="mn-aov-mom"></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- Monthly 매입 -->
+      <div class="block">
+        <div class="block-title mn">📆 [Monthly] 매입 <span id="mn-lbl">2026년 03월</span></div>
+        <table class="tbl">
+          <thead><tr>
+            <th class="left" colspan="2">구분</th>
+            <th>매입량</th><th>매입 원가</th><th>AOV</th>
+            <th>YoY (Q)</th><th>YoY (%)</th>
+          </tr></thead>
+          <tbody id="mb-body"></tbody>
+        </table>
+      </div>
+      <!-- Monthly 매출 -->
+      <div class="block">
+        <div class="block-title mn">📆 [Monthly] 매출 <span id="mn-lbl2">2026년 03월</span></div>
+        <table class="tbl">
+          <thead><tr>
+            <th class="left" colspan="2">채널</th>
+            <th>매출액</th><th>총이익</th><th>이익률</th>
+            <th>YoY (P)</th><th>YoY (%)</th>
+          </tr></thead>
+          <tbody id="ms-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Monthly 플로우 -->
+    <div class="block">
+      <div class="block-title mn">📆 [Monthly] 매출 플로우 <span id="mn-flow-lbl"></span></div>
+      <table class="tbl">
+        <thead><tr>
+          <th class="left">형태</th>
+          <th>매출액</th><th>총이익</th><th>이익률</th>
+          <th>MoM (P)</th><th>MoM (%)</th>
+        </tr></thead>
+        <tbody id="mf-body"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const D = {"meta":{"current_week":"2026-14","current_month":"2026-03","weeks":["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12","2026-13","2026-14"],"months":["2026-01","2026-02","2026-03"],"updated":"2026-03-31"},"weekly":{"buy":{"weeks":["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12","2026-13","2026-14"],"data":{"2026-01":{"c2b":{"qty":44,"cost":17750000,"detail":{"내폰판매":{"qty":37,"cost":15441000},"인앱매입":{"qty":7,"cost":2309000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":11,"cost":12100000,"detail":{"업체매입":{"qty":11,"cost":12100000},"카드매입":{"qty":0,"cost":0}}},"total":{"qty":55,"cost":29850000}},"2026-02":{"c2b":{"qty":174,"cost":49590000,"detail":{"내폰판매":{"qty":133,"cost":35601000},"인앱매입":{"qty":39,"cost":12366000},"보상매입":{"qty":2,"cost":1623000}}},"b2b":{"qty":107,"cost":46298000,"detail":{"업체매입":{"qty":105,"cost":45600000},"카드매입":{"qty":2,"cost":698000}}},"total":{"qty":281,"cost":95888000}},"2026-03":{"c2b":{"qty":193,"cost":62791000,"detail":{"내폰판매":{"qty":143,"cost":47402000},"인앱매입":{"qty":50,"cost":15389000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":40,"cost":19120000,"detail":{"업체매입":{"qty":40,"cost":19120000},"카드매입":{"qty":0,"cost":0}}},"total":{"qty":233,"cost":81911000}},"2026-04":{"c2b":{"qty":190,"cost":63169000,"detail":{"내폰판매":{"qty":142,"cost":47698000},"인앱매입":{"qty":48,"cost":15471000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":8,"cost":8593381,"detail":{"업체매입":{"qty":4,"cost":1380000},"카드매입":{"qty":4,"cost":7213381}}},"total":{"qty":198,"cost":71762381}},"2026-05":{"c2b":{"qty":188,"cost":59535000,"detail":{"내폰판매":{"qty":137,"cost":45136000},"인앱매입":{"qty":51,"cost":14399000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":6,"cost":9301073,"detail":{"업체매입":{"qty":0,"cost":0},"카드매입":{"qty":6,"cost":9301073}}},"total":{"qty":194,"cost":68836073}},"2026-06":{"c2b":{"qty":155,"cost":52915000,"detail":{"내폰판매":{"qty":114,"cost":40041000},"인앱매입":{"qty":41,"cost":12874000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":154,"cost":58301616,"detail":{"업체매입":{"qty":147,"cost":55870000},"카드매입":{"qty":7,"cost":2431616}}},"total":{"qty":309,"cost":111216616}},"2026-07":{"c2b":{"qty":144,"cost":43652000,"detail":{"내폰판매":{"qty":119,"cost":35245000},"인앱매입":{"qty":24,"cost":7677000},"보상매입":{"qty":1,"cost":730000}}},"b2b":{"qty":35,"cost":19768000,"detail":{"업체매입":{"qty":32,"cost":15790000},"카드매입":{"qty":3,"cost":3978000}}},"total":{"qty":179,"cost":63420000}},"2026-08":{"c2b":{"qty":71,"cost":16825000,"detail":{"내폰판매":{"qty":60,"cost":11671000},"인앱매입":{"qty":10,"cost":4654000},"보상매입":{"qty":1,"cost":500000}}},"b2b":{"qty":12,"cost":7870000,"detail":{"업체매입":{"qty":12,"cost":7870000},"카드매입":{"qty":0,"cost":0}}},"total":{"qty":83,"cost":24695000}},"2026-09":{"c2b":{"qty":163,"cost":47355000,"detail":{"내폰판매":{"qty":129,"cost":35078000},"인앱매입":{"qty":33,"cost":11262000},"보상매입":{"qty":1,"cost":1015000}}},"b2b":{"qty":40,"cost":16373000,"detail":{"업체매입":{"qty":39,"cost":15650000},"카드매입":{"qty":1,"cost":723000}}},"total":{"qty":203,"cost":63728000}},"2026-10":{"c2b":{"qty":88,"cost":24781000,"detail":{"내폰판매":{"qty":76,"cost":20738000},"인앱매입":{"qty":12,"cost":4043000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":13,"cost":16985091,"detail":{"업체매입":{"qty":0,"cost":0},"카드매입":{"qty":13,"cost":16985091}}},"total":{"qty":101,"cost":41766091}},"2026-11":{"c2b":{"qty":233,"cost":86300000,"detail":{"내폰판매":{"qty":183,"cost":70325000},"인앱매입":{"qty":50,"cost":15975000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":91,"cost":39751000,"detail":{"업체매입":{"qty":90,"cost":39400000},"카드매입":{"qty":1,"cost":351000}}},"total":{"qty":324,"cost":126051000}},"2026-12":{"c2b":{"qty":249,"cost":93590000,"detail":{"내폰판매":{"qty":214,"cost":80199000},"인앱매입":{"qty":34,"cost":13086000},"보상매입":{"qty":1,"cost":305000}}},"b2b":{"qty":129,"cost":72247637,"detail":{"업체매입":{"qty":125,"cost":66750455},"카드매입":{"qty":4,"cost":5497182}}},"total":{"qty":378,"cost":165837637}},"2026-13":{"c2b":{"qty":193,"cost":68626000,"detail":{"내폰판매":{"qty":159,"cost":57802000},"인앱매입":{"qty":34,"cost":10824000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":10,"cost":7877636,"detail":{"업체매입":{"qty":9,"cost":6292727},"카드매입":{"qty":1,"cost":1584909}}},"total":{"qty":203,"cost":76503636}},"2026-14":{"c2b":{"qty":18,"cost":7483000,"detail":{"내폰판매":{"qty":17,"cost":6423000},"인앱매입":{"qty":1,"cost":1060000},"보상매입":{"qty":0,"cost":0}}},"b2b":{"qty":3,"cost":2908182,"detail":{"업체매입":{"qty":0,"cost":0},"카드매입":{"qty":3,"cost":2908182}}},"total":{"qty":21,"cost":10391182}}}},"sell":{"weeks":["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12","2026-13","2026-14"],"data":{"2026-01":{"channels":{"B2B 매각":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B MVNO":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B Corp":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2C BGZT":{"qty":2,"rev":1545455,"profit":220455,"margin":14.3}},"total":{"rev":1545455,"profit":220455,"margin":14.3}},"2026-02":{"channels":{"B2B 매각":{"qty":179,"rev":53675000,"profit":7975000,"margin":14.9},"B2B MVNO":{"qty":77,"rev":41909000,"profit":5033000,"margin":12.0},"B2B Corp":{"qty":42,"rev":41090000,"profit":7389000,"margin":18.0},"B2C BGZT":{"qty":30,"rev":11781819,"profit":1706819,"margin":14.5}},"total":{"rev":148455819,"profit":22103819,"margin":14.9}},"2026-03":{"channels":{"B2B 매각":{"qty":115,"rev":53490000,"profit":6787000,"margin":12.7},"B2B MVNO":{"qty":87,"rev":43219000,"profit":5050000,"margin":11.7},"B2B Corp":{"qty":5,"rev":1570000,"profit":333000,"margin":21.2},"B2C BGZT":{"qty":18,"rev":10172727,"profit":1013727,"margin":10.0}},"total":{"rev":108451727,"profit":13183727,"margin":12.2}},"2026-04":{"channels":{"B2B 매각":{"qty":147,"rev":40908000,"profit":6059000,"margin":14.8},"B2B MVNO":{"qty":12,"rev":4944000,"profit":1727000,"margin":34.9},"B2B Corp":{"qty":3,"rev":3390000,"profit":834000,"margin":24.6},"B2C BGZT":{"qty":27,"rev":12318184,"profit":1861184,"margin":15.1}},"total":{"rev":61560184,"profit":10481184,"margin":17.0}},"2026-05":{"channels":{"B2B 매각":{"qty":96,"rev":24799000,"profit":3355000,"margin":13.5},"B2B MVNO":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B Corp":{"qty":17,"rev":23960000,"profit":2659637,"margin":11.1},"B2C BGZT":{"qty":21,"rev":11790908,"profit":1452908,"margin":12.3}},"total":{"rev":60549908,"profit":7467545,"margin":12.3}},"2026-06":{"channels":{"B2B 매각":{"qty":115,"rev":41300000,"profit":4659000,"margin":11.3},"B2B MVNO":{"qty":109,"rev":44433000,"profit":3362000,"margin":7.6},"B2B Corp":{"qty":33,"rev":23650000,"profit":3857293,"margin":16.3},"B2C BGZT":{"qty":19,"rev":9681820,"profit":811820,"margin":8.4}},"total":{"rev":119064820,"profit":12690113,"margin":10.7}},"2026-07":{"channels":{"B2B 매각":{"qty":130,"rev":38378000,"profit":3488000,"margin":9.1},"B2B MVNO":{"qty":54,"rev":25888000,"profit":2825000,"margin":10.9},"B2B Corp":{"qty":2,"rev":480000,"profit":90000,"margin":18.8},"B2C BGZT":{"qty":18,"rev":7909091,"profit":1011091,"margin":12.8}},"total":{"rev":72655091,"profit":7414091,"margin":10.2}},"2026-08":{"channels":{"B2B 매각":{"qty":125,"rev":41135000,"profit":5348000,"margin":13.0},"B2B MVNO":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B Corp":{"qty":11,"rev":15370000,"profit":3091000,"margin":20.1},"B2C BGZT":{"qty":12,"rev":9609090,"profit":971090,"margin":10.1}},"total":{"rev":66114090,"profit":9410090,"margin":14.2}},"2026-09":{"channels":{"B2B 매각":{"qty":99,"rev":24350000,"profit":3490000,"margin":14.3},"B2B MVNO":{"qty":78,"rev":41386000,"profit":5729000,"margin":13.8},"B2B Corp":{"qty":8,"rev":7850000,"profit":1253000,"margin":16.0},"B2C BGZT":{"qty":21,"rev":11609091,"profit":1664091,"margin":14.3}},"total":{"rev":85195091,"profit":12136091,"margin":14.2}},"2026-10":{"channels":{"B2B 매각":{"qty":101,"rev":20635000,"profit":2264000,"margin":11.0},"B2B MVNO":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B Corp":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2C BGZT":{"qty":16,"rev":10127272,"profit":1048272,"margin":10.4}},"total":{"rev":30762272,"profit":3312272,"margin":10.8}},"2026-11":{"channels":{"B2B 매각":{"qty":197,"rev":61102000,"profit":6826000,"margin":11.2},"B2B MVNO":{"qty":65,"rev":33035000,"profit":4313000,"margin":13.1},"B2B Corp":{"qty":17,"rev":20950000,"profit":1175909,"margin":5.6},"B2C BGZT":{"qty":18,"rev":9181817,"profit":1082817,"margin":11.8}},"total":{"rev":124268817,"profit":13397726,"margin":10.8}},"2026-12":{"channels":{"B2B 매각":{"qty":196,"rev":75028000,"profit":7378000,"margin":9.8},"B2B MVNO":{"qty":128,"rev":63856000,"profit":7927000,"margin":12.4},"B2B Corp":{"qty":1,"rev":860000,"profit":286000,"margin":33.3},"B2C BGZT":{"qty":34,"rev":17700004,"profit":1884004,"margin":10.6}},"total":{"rev":157444004,"profit":17475004,"margin":11.1}},"2026-13":{"channels":{"B2B 매각":{"qty":91,"rev":33920000,"profit":3105000,"margin":9.2},"B2B MVNO":{"qty":34,"rev":15478000,"profit":1810000,"margin":11.7},"B2B Corp":{"qty":23,"rev":34740000,"profit":3506454,"margin":10.1},"B2C BGZT":{"qty":27,"rev":15372729,"profit":1687729,"margin":11.0}},"total":{"rev":99510729,"profit":10109183,"margin":10.2}},"2026-14":{"channels":{"B2B 매각":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B MVNO":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B Corp":{"qty":16,"rev":10160000,"profit":1427000,"margin":14.0},"B2C BGZT":{"qty":5,"rev":1845455,"profit":227455,"margin":12.3}},"total":{"rev":12005455,"profit":1654455,"margin":13.8}}}},"flow":{"weeks":["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12","2026-13","2026-14"],"data":{"2026-01":{"C2B2C":{"qty":2,"rev":1545455,"profit":220455,"margin":14.3},"C2B2B":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B2B":{"qty":0,"rev":0,"profit":0,"margin":0.0},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-02":{"C2B2C":{"qty":30,"rev":11781819,"profit":1706819,"margin":14.5},"C2B2B":{"qty":215,"rev":84005000,"profit":14542000,"margin":17.3},"B2B2B":{"qty":83,"rev":52669000,"profit":5855000,"margin":11.1},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-03":{"C2B2C":{"qty":18,"rev":10172727,"profit":1013727,"margin":10.0},"C2B2B":{"qty":126,"rev":59557000,"profit":8622000,"margin":14.5},"B2B2B":{"qty":81,"rev":38722000,"profit":3548000,"margin":9.2},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-04":{"C2B2C":{"qty":27,"rev":12318184,"profit":1861184,"margin":15.1},"C2B2B":{"qty":158,"rev":47534000,"profit":8292000,"margin":17.4},"B2B2B":{"qty":4,"rev":1708000,"profit":328000,"margin":19.2},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-05":{"C2B2C":{"qty":21,"rev":11790908,"profit":1452908,"margin":12.3},"C2B2B":{"qty":104,"rev":33219000,"profit":5180000,"margin":15.6},"B2B2B":{"qty":9,"rev":15540000,"profit":834637,"margin":5.4},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-06":{"C2B2C":{"qty":19,"rev":9681820,"profit":811820,"margin":8.4},"C2B2B":{"qty":134,"rev":55907000,"profit":8303000,"margin":14.9},"B2B2B":{"qty":123,"rev":53476000,"profit":3575293,"margin":6.7},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-07":{"C2B2C":{"qty":18,"rev":7909091,"profit":1011091,"margin":12.8},"C2B2B":{"qty":134,"rev":44047000,"profit":4884000,"margin":11.1},"B2B2B":{"qty":52,"rev":20699000,"profit":1519000,"margin":7.3},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-08":{"C2B2C":{"qty":12,"rev":9609090,"profit":971090,"margin":10.1},"C2B2B":{"qty":131,"rev":50445000,"profit":7657000,"margin":15.2},"B2B2B":{"qty":5,"rev":6060000,"profit":782000,"margin":12.9},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-09":{"C2B2C":{"qty":21,"rev":11609091,"profit":1664091,"margin":14.3},"C2B2B":{"qty":119,"rev":38950000,"profit":6839000,"margin":17.6},"B2B2B":{"qty":66,"rev":34636000,"profit":3633000,"margin":10.5},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-10":{"C2B2C":{"qty":16,"rev":10127272,"profit":1048272,"margin":10.4},"C2B2B":{"qty":100,"rev":20590000,"profit":2569000,"margin":12.5},"B2B2B":{"qty":1,"rev":45000,"profit":-305000,"margin":-677.8},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-11":{"C2B2C":{"qty":18,"rev":9181817,"profit":1082817,"margin":11.8},"C2B2B":{"qty":212,"rev":70841000,"profit":8975000,"margin":12.7},"B2B2B":{"qty":67,"rev":44246000,"profit":3339909,"margin":7.5},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-12":{"C2B2C":{"qty":34,"rev":17700004,"profit":1884004,"margin":10.6},"C2B2B":{"qty":212,"rev":83043000,"profit":9490000,"margin":11.4},"B2B2B":{"qty":113,"rev":56701000,"profit":6101000,"margin":10.8},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-13":{"C2B2C":{"qty":27,"rev":15372729,"profit":1687729,"margin":11.0},"C2B2B":{"qty":105,"rev":49098000,"profit":5954000,"margin":12.1},"B2B2B":{"qty":43,"rev":35040000,"profit":2467454,"margin":7.0},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-14":{"C2B2C":{"qty":5,"rev":1845455,"profit":227455,"margin":12.3},"C2B2B":{"qty":1,"rev":540000,"profit":107000,"margin":19.8},"B2B2B":{"qty":15,"rev":9620000,"profit":1320000,"margin":13.7},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}}}}},"monthly":{"months":["2026-01","2026-02","2026-03"],"buy":{"data":{"2026-01":{"c2b":{"qty":789,"cost":252835000,"detail":{"내폰판매":{"qty":592,"cost":191278000},"인앱매입":{"qty":195,"cost":59934000},"보상매입":{"qty":2,"cost":1623000}},"aov":320450},"b2b":{"qty":172,"cost":95412454,"detail":{"업체매입":{"qty":160,"cost":78200000},"카드매입":{"qty":12,"cost":17212454}},"aov":554724},"total":{"qty":961,"cost":348247454,"aov":362380}},"2026-02":{"c2b":{"qty":533,"cost":160747000,"detail":{"내폰판매":{"qty":422,"cost":122035000},"인앱매입":{"qty":108,"cost":36467000},"보상매입":{"qty":3,"cost":2245000}},"aov":301589},"b2b":{"qty":241,"cost":102312616,"detail":{"업체매입":{"qty":230,"cost":95180000},"카드매입":{"qty":11,"cost":7132616}},"aov":424534},"total":{"qty":774,"cost":263059616,"aov":339870}},"2026-03":{"c2b":{"qty":781,"cost":280780000,"detail":{"내폰판매":{"qty":649,"cost":235487000},"인앱매입":{"qty":131,"cost":44988000},"보상매입":{"qty":1,"cost":305000}},"aov":359513},"b2b":{"qty":246,"cost":139769546,"detail":{"업체매입":{"qty":224,"cost":112443182},"카드매입":{"qty":22,"cost":27326364}},"aov":568169},"total":{"qty":1027,"cost":420549546,"aov":409493}}},"cumulative":{"qty":2762,"cost":1031856616,"aov":373590}},"sell":{"data":{"2026-01":{"channels":{"B2B 매각":{"qty":537,"rev":172872000,"profit":24176000,"margin":14.0},"B2B MVNO":{"qty":176,"rev":90072000,"profit":11810000,"margin":13.1},"B2B Corp":{"qty":67,"rev":70010000,"profit":11215637,"margin":16.0},"B2C BGZT":{"qty":86,"rev":41600002,"profit":5399002,"margin":13.0}},"total":{"rev":374554002,"profit":52600639,"margin":14.0}},"2026-02":{"channels":{"B2B 매각":{"qty":469,"rev":145163000,"profit":16985000,"margin":11.7},"B2B MVNO":{"qty":241,"rev":111707000,"profit":11916000,"margin":10.7},"B2B Corp":{"qty":54,"rev":47350000,"profit":8291293,"margin":17.5},"B2C BGZT":{"qty":71,"rev":40381819,"profit":4471819,"margin":11.1}},"total":{"rev":344601819,"profit":41664112,"margin":12.1}},"2026-03":{"channels":{"B2B 매각":{"qty":585,"rev":190685000,"profit":19573000,"margin":10.3},"B2B MVNO":{"qty":227,"rev":112369000,"profit":14050000,"margin":12.5},"B2B Corp":{"qty":57,"rev":66710000,"profit":6395363,"margin":9.6},"B2C BGZT":{"qty":99,"rev":53554549,"profit":6089549,"margin":11.4}},"total":{"rev":423318549,"profit":46107912,"margin":10.9}}},"cumulative":{"rev":1142474370,"profit":140372663,"margin":12.3}},"flow":{"data":{"2026-01":{"C2B2C":{"qty":86,"rev":41600002,"profit":5399002,"margin":13.0},"C2B2B":{"qty":603,"rev":224315000,"profit":36636000,"margin":16.3},"B2B2B":{"qty":177,"rev":108639000,"profit":10565637,"margin":9.7},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-02":{"C2B2C":{"qty":71,"rev":40381819,"profit":4471819,"margin":11.1},"C2B2B":{"qty":518,"rev":189349000,"profit":27683000,"margin":14.6},"B2B2B":{"qty":246,"rev":114871000,"profit":9509293,"margin":8.3},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}},"2026-03":{"C2B2C":{"qty":99,"rev":53554549,"profit":6089549,"margin":11.4},"C2B2B":{"qty":630,"rev":224112000,"profit":27095000,"margin":12.1},"B2B2B":{"qty":239,"rev":145652000,"profit":12923363,"margin":8.9},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}}},"cumulative":{"C2B2C":{"qty":256,"rev":135536370,"profit":15960370,"margin":11.8},"C2B2B":{"qty":1751,"rev":637776000,"profit":91414000,"margin":14.3},"B2B2B":{"qty":662,"rev":369162000,"profit":32998293,"margin":8.9},"B2B2C":{"qty":0,"rev":0,"profit":0,"margin":0.0}}}}};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const W  = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+const N  = n => Math.round(n).toLocaleString('ko-KR');
+const P  = n => n != null ? n.toFixed(1) + '%' : '—';
+const sp = (a,b) => b ? parseFloat(((a-b)/b*100).toFixed(1)) : null;
+
+function wowCells(diff, pct) {
+  if (diff == null) return '<td class="n neu">—</td><td class="n neu">—</td>';
+  const up = diff >= 0, cls = up ? 'up' : 'dn', arrow = up ? '↑' : '↓';
+  return `<td class="n ${cls}">${arrow} ${N(Math.abs(diff))}</td>
+          <td class="n ${cls}">${P(Math.abs(pct))}</td>`;
+}
+function momTag(diff, pct, unit='') {
+  if (diff == null) return '';
+  const up = diff >= 0, cls = up ? 'up' : 'dn', arrow = up ? '↑' : '↓';
+  const ps = pct != null ? ` (${P(Math.abs(pct))})` : '';
+  return `<span class="${cls}">${arrow} ${(up?'+':'-')}${N(Math.abs(Math.round(diff)))}${unit}${ps} WoW</span>`;
+}
+function momTagM(diff, pct, unit='') {
+  if (diff == null) return '';
+  const up = diff >= 0, cls = up ? 'up' : 'dn', arrow = up ? '↑' : '↓';
+  const ps = pct != null ? ` (${P(Math.abs(pct))})` : '';
+  return `<span class="${cls}">${arrow} ${(up?'+':'-')}${N(Math.abs(Math.round(diff)))}${unit}${ps} MoM</span>`;
+}
+
+// ── Week Key Helper ───────────────────────────────────────────────────────────
+function getWeekKey(baseKey, offset) {
+  if (!baseKey) return null;
+  const [yr, wn] = baseKey.split('-');
+  const n = parseInt(wn) + offset;
+  if (n <= 0 || n > 53) return null;
+  return yr + '-' + String(n).padStart(2, '0');
+}
+function wkLabel(key) { return key ? key.replace('2026-','')+'W' : '—'; }
+function safeQ(obj) { return obj ? N(obj.qty) : '—'; }
+function noData() { return '<td class="n neu">—</td><td class="n neu">—</td>'; }
+
+// ── Tab Switch ────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-' + name).classList.add('active');
+}
+
+// ── Weekly KPI ────────────────────────────────────────────────────────────────
+function renderWeeklyKPI(selW) {
+  const w0 = selW, w1 = getWeekKey(selW, -1);
+  const cb = D.weekly.buy.data, cs = D.weekly.sell.data;
+  const b0 = cb[w0] || null, b1 = w1 ? (cb[w1] || null) : null;
+  const s0 = cs[w0] || null, s1 = w1 ? (cs[w1] || null) : null;
+
+  document.getElementById('wk-buy-qty').textContent  = b0 ? N(b0.total.qty)+'개' : '—';
+  document.getElementById('wk-buy-cost').textContent = b0 ? W(b0.total.cost) : '—';
+  document.getElementById('wk-buy-wow').innerHTML    = (b0&&b1) ? momTag(b0.total.qty-b1.total.qty, sp(b0.total.qty,b1.total.qty),'개') : '';
+
+  document.getElementById('wk-sell-rev').textContent    = s0 ? W(s0.total.rev) : '—';
+  document.getElementById('wk-sell-profit').textContent = s0 ? '이익 '+W(s0.total.profit) : '—';
+  document.getElementById('wk-sell-wow').innerHTML      = (s0&&s1) ? momTag(s0.total.rev-s1.total.rev, sp(s0.total.rev,s1.total.rev),'원') : '';
+
+  document.getElementById('wk-margin').textContent     = s0 ? P(s0.total.margin) : '—';
+  document.getElementById('wk-margin-sub').textContent = s0 ? '이익 '+W(s0.total.profit) : '—';
+  document.getElementById('wk-margin-wow').innerHTML   = (s0&&s1) ? momTag(s0.total.margin-s1.total.margin, null,'%p') : '';
+
+  const aov0 = (b0&&b0.total.qty) ? Math.round(b0.total.cost/b0.total.qty) : null;
+  const aov1 = (b1&&b1.total.qty) ? Math.round(b1.total.cost/b1.total.qty) : null;
+  document.getElementById('wk-aov').textContent     = aov0 ? W(aov0) : '—';
+  document.getElementById('wk-aov-sub').textContent = aov1 ? '전주 '+W(aov1) : '—';
+  document.getElementById('wk-aov-wow').innerHTML   = (aov0&&aov1) ? momTag(aov0-aov1, sp(aov0,aov1),'원') : '';
+}
+
+// ── Weekly Buy Table ──────────────────────────────────────────────────────────
+function renderWeeklyBuy(selW) {
+  const dat = D.weekly.buy.data;
+  const w0=selW, w1=getWeekKey(selW,-1), w2=getWeekKey(selW,-2);
+  const cur=dat[w0]||null, prv=w1?(dat[w1]||null):null, pr2=w2?(dat[w2]||null):null;
+
+  document.getElementById('wh2').textContent     = wkLabel(w0);
+  document.getElementById('wh1').textContent     = wkLabel(w1);
+  document.getElementById('wh0').textContent     = wkLabel(w2);
+  document.getElementById('wk-lbl').textContent  = wkLabel(w0);
+  document.getElementById('wk-lbl2').textContent = wkLabel(w0);
+
+  const qCell = (obj, key) => `<td class="n">${obj ? N(obj[key]) : '—'}</td>`;
+  const wow = (a, b) => (a&&b) ? wowCells(a.qty-b.qty, sp(a.qty,b.qty)) : noData();
+
+  let h = '';
+  // C2B
+  h += `<tr class="r-sub"><td colspan="2">① C2B</td>
+    ${qCell(cur?.c2b,'qty')}${qCell(prv?.c2b,'qty')}${qCell(pr2?.c2b,'qty')}
+    ${wow(cur?.c2b, prv?.c2b)}</tr>`;
+  ['내폰판매','인앱매입','보상매입'].forEach(fn => {
+    const d0=cur?.c2b?.detail[fn], d1=prv?.c2b?.detail[fn], d2=pr2?.c2b?.detail[fn];
+    h += `<tr class="r-det"><td colspan="2">${fn}</td>
+      ${qCell(d0,'qty')}${qCell(d1,'qty')}${qCell(d2,'qty')}
+      ${wow(d0,d1)}</tr>`;
+  });
+  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  // B2B
+  h += `<tr class="r-sub"><td colspan="2">② B2B</td>
+    ${qCell(cur?.b2b,'qty')}${qCell(prv?.b2b,'qty')}${qCell(pr2?.b2b,'qty')}
+    ${wow(cur?.b2b, prv?.b2b)}</tr>`;
+  ['업체매입','카드매입'].forEach(fn => {
+    const d0=cur?.b2b?.detail[fn], d1=prv?.b2b?.detail[fn], d2=pr2?.b2b?.detail[fn];
+    h += `<tr class="r-det"><td colspan="2">${fn}</td>
+      ${qCell(d0,'qty')}${qCell(d1,'qty')}${qCell(d2,'qty')}
+      ${wow(d0,d1)}</tr>`;
+  });
+  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  h += `<tr class="r-total"><td colspan="2">③ Total</td>
+    ${qCell(cur?.total,'qty')}${qCell(prv?.total,'qty')}${qCell(pr2?.total,'qty')}
+    ${wow(cur?.total, prv?.total)}</tr>`;
+
+  document.getElementById('wb-body').innerHTML = h;
+}
+
+// ── Weekly Sell Table ─────────────────────────────────────────────────────────
+function renderWeeklySell(selW) {
+  const w0=selW, w1=getWeekKey(selW,-1);
+  const sd = D.weekly.sell.data;
+  const cur=sd[w0]||null, prv=w1?(sd[w1]||null):null;
+  const labels={'B2B 매각':'① B2B 매각','B2B MVNO':'② B2B MVNO','B2B Corp':'③ B2B Corp','B2C BGZT':'④ B2C BGZT'};
+
+  let h = '';
+  ['B2B 매각','B2B MVNO','B2B Corp','B2C BGZT'].forEach(ch => {
+    const c0=cur?.channels?.[ch], c1=prv?.channels?.[ch];
+    h += `<tr><td colspan="2">${labels[ch]}</td>
+      <td class="n">${c0 ? W(c0.rev) : '—'}</td>
+      <td class="n">${c0 ? W(c0.profit) : '—'}</td>
+      <td class="n">${c0 ? P(c0.margin) : '—'}</td>
+      ${(c0&&c1) ? wowCells(c0.rev-c1.rev, sp(c0.rev,c1.rev)) : noData()}</tr>`;
+  });
+  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  h += `<tr class="r-total"><td colspan="2">Total</td>
+    <td class="n">${cur ? W(cur.total.rev) : '—'}</td>
+    <td class="n">${cur ? W(cur.total.profit) : '—'}</td>
+    <td class="n">${cur ? P(cur.total.margin) : '—'}</td>
+    ${(cur&&prv) ? wowCells(cur.total.rev-prv.total.rev, sp(cur.total.rev,prv.total.rev)) : noData()}</tr>`;
+
+  document.getElementById('ws-body').innerHTML = h;
+}
+
+// ── Weekly Flow Table ────────────────────────────────────────────────────────
+function renderWeeklyFlow(selW) {
+  const w0=selW, w1=getWeekKey(selW,-1);
+  const fd=D.weekly.flow.data;
+  const cur=fd[w0]||null, prv=w1?(fd[w1]||null):null;
+  document.getElementById('wk-flow-lbl').textContent = wkLabel(w0);
+  const FLOWS=[['C2B2C','① C2B2C'],['C2B2B','② C2B2B'],['B2B2B','③ B2B2B'],['B2B2C','④ B2B2C']];
+  let h='', totRev0=0, totPnl0=0, totRev1=0, totPnl1=0;
+  FLOWS.forEach(([k,lbl]) => {
+    const c0=cur?.[k]||null, c1=prv?.[k]||null;
+    if(c0){ totRev0+=c0.rev; totPnl0+=c0.profit; }
+    if(c1){ totRev1+=c1.rev; totPnl1+=c1.profit; }
+    h+=`<tr>
+      <td>${lbl}</td>
+      <td class="n">${c0&&c0.rev>0?W(c0.rev):'—'}</td>
+      <td class="n">${c0&&c0.rev>0?W(c0.profit):'—'}</td>
+      <td class="n">${c0&&c0.rev>0?P(c0.margin):'—'}</td>
+      ${(c0&&c0.rev>0&&c1&&c1.rev>0)?wowCells(c0.rev-c1.rev,sp(c0.rev,c1.rev)):noData()}
+    </tr>`;
+  });
+  h+=`<tr class="r-sep"><td colspan="6"></td></tr>`;
+  const tm0=totRev0>0?parseFloat((totPnl0/totRev0*100).toFixed(1)):0;
+  const revDiff=totRev1>0?totRev0-totRev1:null;
+  const revPct=totRev1>0?sp(totRev0,totRev1):null;
+  h+=`<tr class="r-total"><td>Total</td>
+    <td class="n">${totRev0>0?W(totRev0):'—'}</td>
+    <td class="n">${totRev0>0?W(totPnl0):'—'}</td>
+    <td class="n">${totRev0>0?P(tm0):'—'}</td>
+    ${revDiff!=null?wowCells(revDiff,revPct):noData()}</tr>`;
+  document.getElementById('wf-body').innerHTML=h;
+}
+
+// ── Monthly Flow Table ────────────────────────────────────────────────────────
+function renderMonthlyFlow(selM) {
+  const prevM=getPrevMonth(selM);
+  const fd=D.monthly.flow.data;
+  const cur=fd[selM]||null, prv=prevM?(fd[prevM]||null):null;
+  document.getElementById('mn-flow-lbl').textContent = mnLabel(selM);
+  const FLOWS=[['C2B2C','① C2B2C'],['C2B2B','② C2B2B'],['B2B2B','③ B2B2B'],['B2B2C','④ B2B2C']];
+  const noMoM=()=>'<td class="n neu">—</td><td class="n neu">—</td>';
+  let h='', totRev0=0, totPnl0=0, totRev1=0, totPnl1=0;
+  FLOWS.forEach(([k,lbl]) => {
+    const c0=cur?.[k]||null, c1=prv?.[k]||null;
+    if(c0){ totRev0+=c0.rev; totPnl0+=c0.profit; }
+    if(c1){ totRev1+=c1.rev; totPnl1+=c1.profit; }
+    h+=`<tr>
+      <td>${lbl}</td>
+      <td class="n">${c0&&c0.rev>0?W(c0.rev):'—'}</td>
+      <td class="n">${c0&&c0.rev>0?W(c0.profit):'—'}</td>
+      <td class="n">${c0&&c0.rev>0?P(c0.margin):'—'}</td>
+      ${(c0&&c0.rev>0&&c1&&c1.rev>0)?wowCells(c0.rev-c1.rev,sp(c0.rev,c1.rev)):noMoM()}
+    </tr>`;
+  });
+  h+=`<tr class="r-sep"><td colspan="6"></td></tr>`;
+  const tm0=totRev0>0?parseFloat((totPnl0/totRev0*100).toFixed(1)):0;
+  const revDiff=totRev1>0?totRev0-totRev1:null;
+  const revPct=totRev1>0?sp(totRev0,totRev1):null;
+  h+=`<tr class="r-total"><td>Total</td>
+    <td class="n">${totRev0>0?W(totRev0):'—'}</td>
+    <td class="n">${totRev0>0?W(totPnl0):'—'}</td>
+    <td class="n">${totRev0>0?P(tm0):'—'}</td>
+    ${revDiff!=null?wowCells(revDiff,revPct):noMoM()}</tr>`;
+  document.getElementById('mf-body').innerHTML=h;
+}
+
+// ── Monthly KPI ───────────────────────────────────────────────────────────────
+function renderMonthlyKPI(selM) {
+  const bd=D.monthly.buy.data, sd=D.monthly.sell.data;
+  const prevM = getPrevMonth(selM);
+  const cb=bd[selM]||null, pb=prevM?(bd[prevM]||null):null;
+  const cs=sd[selM]||null, ps=prevM?(sd[prevM]||null):null;
+
+  document.getElementById('mn-buy-qty').textContent  = cb ? N(cb.total.qty)+'개' : '—';
+  document.getElementById('mn-buy-cost').textContent = cb ? W(cb.total.cost) : '—';
+  const bqDiff = (cb&&pb) ? cb.total.qty-pb.total.qty : null;
+  const bqPct  = (cb&&pb) ? sp(cb.total.qty,pb.total.qty) : null;
+  document.getElementById('mn-buy-mom').innerHTML = bqDiff!=null ? momTagM(bqDiff,bqPct,'개') : '';
+
+  document.getElementById('mn-sell-rev').textContent    = cs ? W(cs.total.rev) : '—';
+  document.getElementById('mn-sell-profit').textContent = cs ? '이익 '+W(cs.total.profit) : '—';
+  const srDiff = (cs&&ps) ? cs.total.rev-ps.total.rev : null;
+  const srPct  = (cs&&ps) ? sp(cs.total.rev,ps.total.rev) : null;
+  document.getElementById('mn-sell-mom').innerHTML = srDiff!=null ? momTagM(srDiff,srPct,'원') : '';
+
+  document.getElementById('mn-margin').textContent     = cs ? P(cs.total.margin) : '—';
+  document.getElementById('mn-margin-sub').textContent = cs ? '이익 '+W(cs.total.profit) : '—';
+  const mmDiff = (cs&&ps) ? cs.total.margin-ps.total.margin : null;
+  document.getElementById('mn-margin-mom').innerHTML = mmDiff!=null ? momTagM(mmDiff,null,'%p') : '';
+
+  const aov0 = (cb&&cb.total.qty) ? Math.round(cb.total.cost/cb.total.qty) : null;
+  const aov1 = (pb&&pb.total.qty) ? Math.round(pb.total.cost/pb.total.qty) : null;
+  document.getElementById('mn-aov').textContent     = aov0 ? W(aov0) : '—';
+  document.getElementById('mn-aov-sub').textContent = aov1 ? '전월 '+W(aov1) : '—';
+  document.getElementById('mn-aov-mom').innerHTML   = (aov0&&aov1) ? momTagM(aov0-aov1,sp(aov0,aov1),'원') : '';
+}
+
+// ── Monthly Buy Table ─────────────────────────────────────────────────────────
+function renderMonthlyBuy(selM) {
+  const bd=D.monthly.buy.data, cum=D.monthly.buy.cumulative;
+  const prevM=getPrevMonth(selM);
+  const cur=bd[selM]||null, prv=prevM?(bd[prevM]||null):null;
+  const mnLbl=mnLabel(selM), prevLbl=prevM?mnLabel(prevM):'';
+
+  document.getElementById('mn-lbl').textContent  = mnLbl;
+  document.getElementById('mn-lbl2').textContent = mnLbl;
+
+  const noMoM = () => '<td class="c" colspan="2" style="font-size:10px;">—</td>';
+
+  const CUM_2025 = 10473; // 2025년 총 누적 기준
+  const cumDiff = cum.qty - CUM_2025;
+  const cumPct  = sp(cum.qty, CUM_2025);
+
+  // 전전월 계산 (전월 MoM 비교용)
+  const ppM  = prevM ? getPrevMonth(prevM) : null;
+  const pprv = ppM ? (bd[ppM]||null) : null;
+
+  let h = '';
+  h += `<tr class="r-cum"><td colspan="2">• 2026 총 누적</td>
+    <td class="n">${N(cum.qty)}</td><td class="n">${W(cum.cost)}</td><td class="n">${W(cum.aov)}</td>
+    ${wowCells(cumDiff, cumPct)}</tr>`;
+  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  h += `<tr style="background:#E8EDF5;font-size:10px;font-weight:700;color:var(--navy);">
+    <td colspan="2" style="padding:4px 10px;">구분</td>
+    <td class="n" style="padding:4px 10px;">매입량</td>
+    <td class="n" style="padding:4px 10px;">매입 원가</td>
+    <td class="n" style="padding:4px 10px;">AOV</td>
+    <td class="n" style="padding:4px 10px;">MoM (Q)</td>
+    <td class="n" style="padding:4px 10px;">MoM (%)</td>
+  </tr>`;
+  if (prv) {
+    const prvDiff = pprv ? prv.total.qty - pprv.total.qty : null;
+    const prvPct  = pprv ? sp(prv.total.qty, pprv.total.qty) : null;
+    h += `<tr class="r-prev"><td colspan="2">• ${prevLbl} (전월)</td>
+      <td class="n">${N(prv.total.qty)}</td><td class="n">${W(prv.total.cost)}</td><td class="n">${prv.total.aov?W(prv.total.aov):'—'}</td>
+      ${prvDiff!=null ? wowCells(prvDiff, prvPct) : '<td class="c" colspan="2" style="font-size:10px;">—</td>'}</tr>`;
+    h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  }
+  if (!cur) { document.getElementById('mb-body').innerHTML = h; return; }
+
+  // C2B
+  const cc=cur.c2b, pc=prv?.c2b;
+  h += `<tr class="r-sub"><td colspan="2">① C2B</td>
+    <td class="n">${N(cc.qty)}</td><td class="n">${W(cc.cost)}</td><td class="n">${cc.aov?W(cc.aov):'—'}</td>
+    ${(pc) ? wowCells(cc.qty-pc.qty, sp(cc.qty,pc.qty)) : noMoM()}</tr>`;
+  ['내폰판매','인앱매입','보상매입'].forEach(fn => {
+    const d0=cc.detail[fn], d1=pc?.detail[fn];
+    const daov = d0.qty>0 ? Math.round(d0.cost/d0.qty) : 0;
+    h += `<tr class="r-det"><td colspan="2">${fn}</td>
+      <td class="n">${N(d0.qty)}</td><td class="n">${W(d0.cost)}</td><td class="n">${d0.qty>0?W(daov):'—'}</td>
+      ${(d1) ? wowCells(d0.qty-d1.qty, sp(d0.qty,d1.qty)) : noMoM()}</tr>`;
+  });
+  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  // B2B
+  const cb2=cur.b2b, pb2=prv?.b2b;
+  h += `<tr class="r-sub"><td colspan="2">② B2B</td>
+    <td class="n">${N(cb2.qty)}</td><td class="n">${W(cb2.cost)}</td><td class="n">${cb2.aov?W(cb2.aov):'—'}</td>
+    ${(pb2) ? wowCells(cb2.qty-pb2.qty, sp(cb2.qty,pb2.qty)) : noMoM()}</tr>`;
+  ['업체매입','카드매입'].forEach(fn => {
+    const d0=cb2.detail[fn], d1=pb2?.detail[fn];
+    const daov = d0.qty>0 ? Math.round(d0.cost/d0.qty) : 0;
+    h += `<tr class="r-det"><td colspan="2">${fn}</td>
+      <td class="n">${N(d0.qty)}</td><td class="n">${W(d0.cost)}</td><td class="n">${d0.qty>0?W(daov):'—'}</td>
+      ${(d1) ? wowCells(d0.qty-d1.qty, sp(d0.qty,d1.qty)) : noMoM()}</tr>`;
+  });
+  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  const momQDiff=(prv)?cur.total.qty-prv.total.qty:null, momQPct=(prv)?sp(cur.total.qty,prv.total.qty):null;
+  h += `<tr class="r-total"><td colspan="2">• ${mnLbl} 총 수량</td>
+    <td class="n">${N(cur.total.qty)}</td><td class="n">${W(cur.total.cost)}</td><td class="n">${cur.total.aov?W(cur.total.aov):'—'}</td>
+    ${momQDiff!=null ? wowCells(momQDiff,momQPct) : noMoM()}</tr>`;
+
+  document.getElementById('mb-body').innerHTML = h;
+}
+
+// ── Monthly Sell Table ────────────────────────────────────────────────────────
+function renderMonthlySell(selM) {
+  const sd=D.monthly.sell.data, cum=D.monthly.sell.cumulative;
+  const prevM=getPrevMonth(selM);
+  const cur=sd[selM]||null, prv=prevM?(sd[prevM]||null):null;
+  const prevLbl=prevM?mnLabel(prevM):'', mnLbl=mnLabel(selM);
+  const labels={'B2B 매각':'① B2B 매각','B2B MVNO':'② B2B MVNO','B2B Corp':'③ B2B Corp','B2C BGZT':'④ B2C BGZT'};
+  const noMoM = () => '<td class="c" colspan="2" style="font-size:10px;">—</td>';
+
+  const CUM_2025_REV = 4342472740; // 2025년 총 누적 매출 기준
+  const cumRevDiff = cum.rev - CUM_2025_REV;
+  const cumRevPct  = sp(cum.rev, CUM_2025_REV);
+
+  // 전전월 계산 (전월 MoM 비교용)
+  const ppM2  = prevM ? getPrevMonth(prevM) : null;
+  const pprv2 = ppM2 ? (sd[ppM2]||null) : null;
+
+  let h = '';
+  h += `<tr class="r-cum"><td colspan="2">• 2026 총 누적</td>
+    <td class="n">${W(cum.rev)}</td><td class="n">${W(cum.profit)}</td><td class="n">${P(cum.margin)}</td>
+    ${wowCells(cumRevDiff, cumRevPct)}</tr>`;
+  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  h += `<tr style="background:#E8EDF5;font-size:10px;font-weight:700;color:var(--navy);">
+    <td colspan="2" style="padding:4px 10px;">구분</td>
+    <td class="n" style="padding:4px 10px;">매출액</td>
+    <td class="n" style="padding:4px 10px;">총이익</td>
+    <td class="n" style="padding:4px 10px;">이익률</td>
+    <td class="n" style="padding:4px 10px;">MoM (P)</td>
+    <td class="n" style="padding:4px 10px;">MoM (%)</td>
+  </tr>`;
+  if (prv) {
+    const prvRevDiff = pprv2 ? prv.total.rev - pprv2.total.rev : null;
+    const prvRevPct  = pprv2 ? sp(prv.total.rev, pprv2.total.rev) : null;
+    h += `<tr class="r-prev"><td colspan="2">• ${prevLbl} (전월)</td>
+      <td class="n">${W(prv.total.rev)}</td><td class="n">${W(prv.total.profit)}</td><td class="n">${P(prv.total.margin)}</td>
+      ${prvRevDiff!=null ? wowCells(prvRevDiff, prvRevPct) : '<td class="c" colspan="2" style="font-size:10px;">—</td>'}</tr>`;
+    h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  }
+  if (!cur) { document.getElementById('ms-body').innerHTML = h; return; }
+
+  ['B2B 매각','B2B MVNO','B2B Corp','B2C BGZT'].forEach(ch => {
+    const c0=cur.channels[ch], c1=prv?.channels?.[ch];
+    h += `<tr><td colspan="2">${labels[ch]}</td>
+      <td class="n">${c0?W(c0.rev):'—'}</td><td class="n">${c0?W(c0.profit):'—'}</td><td class="n">${c0?P(c0.margin):'—'}</td>
+      ${(c0&&c1)?wowCells(c0.rev-c1.rev, sp(c0.rev,c1.rev)):noMoM()}</tr>`;
+  });
+  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  const momRDiff=(cur&&prv)?cur.total.rev-prv.total.rev:null, momRPct=(cur&&prv)?sp(cur.total.rev,prv.total.rev):null;
+  h += `<tr class="r-total"><td colspan="2">• ${mnLbl} 매출 총액</td>
+    <td class="n">${cur?W(cur.total.rev):'—'}</td><td class="n">${cur?W(cur.total.profit):'—'}</td><td class="n">${cur?P(cur.total.margin):'—'}</td>
+    ${momRDiff!=null ? wowCells(momRDiff,momRPct) : noMoM()}</tr>`;
+
+  document.getElementById('ms-body').innerHTML = h;
+}
+
+// ── Month Helpers ────────────────────────────────────────────────────────────
+function getPrevMonth(key) {
+  if (!key) return null;
+  const [yr, mn] = key.split('-');
+  const n = parseInt(mn) - 1;
+  if (n <= 0) return null;
+  return yr + '-' + String(n).padStart(2,'0');
+}
+function mnLabel(key) {
+  if (!key) return '—';
+  const mn = parseInt(key.split('-')[1]);
+  return `2026년 ${mn}월`;
+}
+
+// ── Month Dropdown ────────────────────────────────────────────────────────────
+function initMonthSelect() {
+  const sel = document.getElementById('month-select');
+  const allMs = [...D.monthly.months].reverse(); // 최신 월이 위
+  allMs.forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = mnLabel(key);
+    sel.appendChild(opt);
+  });
+  sel.value = D.meta.current_month;
+  updateMonthRangeLbl(D.meta.current_month);
+}
+function updateMonthRangeLbl(selM) {
+  const prev = getPrevMonth(selM);
+  const lbl = prev ? `(${mnLabel(prev)} → ${mnLabel(selM)})` : `(${mnLabel(selM)})`;
+  document.getElementById('mn-range-lbl').textContent = lbl;
+}
+function onMonthChange(val) {
+  updateMonthRangeLbl(val);
+  renderMonthlyKPI(val);
+  renderMonthlyBuy(val);
+  renderMonthlySell(val);
+  renderMonthlyFlow(val);
+}
+
+// ── Week Dropdown ─────────────────────────────────────────────────────────────
+function initWeekSelect() {
+  const sel = document.getElementById('week-select');
+  // 데이터에 있는 전체 주차를 내림차순으로 표시 (최신 주차가 위)
+  const available = new Set(D.weekly.buy.weeks);
+  const allWks = [...D.weekly.buy.weeks].reverse();
+  allWks.forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    const wnum = key.split('-')[1];
+    opt.textContent = wnum + 'W';
+    sel.appendChild(opt);
+  });
+  sel.value = D.meta.current_week;
+  updateRangeLbl(D.meta.current_week);
+}
+function updateRangeLbl(selW) {
+  const w2 = getWeekKey(selW, -2);
+  const lbl = w2 ? `(${wkLabel(w2)} ~ ${wkLabel(selW)})` : `(${wkLabel(selW)})`;
+  document.getElementById('wk-range-lbl').textContent = lbl;
+}
+function onWeekChange(val) {
+  updateRangeLbl(val);
+  renderWeeklyKPI(val);
+  renderWeeklyBuy(val);
+  renderWeeklySell(val);
+  renderWeeklyFlow(val);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+initWeekSelect();
+initMonthSelect();
+const _curW = D.meta.current_week;
+renderWeeklyKPI(_curW); renderWeeklyBuy(_curW); renderWeeklySell(_curW);
+const _curM = D.meta.current_month;
+renderMonthlyKPI(_curM); renderMonthlyBuy(_curM); renderMonthlySell(_curM); renderMonthlyFlow(_curM);
+renderWeeklyFlow(_curW);
+</script>
+</body>
+</html>
