@@ -559,6 +559,29 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
       </table></div>
     </div>
 
+
+    <!-- ── B2B Monthly Charts ── -->
+    <div class="two-col" style="margin-top:4px;">
+      <div class="block">
+        <div class="block-title b2bm">📊 B2B 월별 매출 추이</div>
+        <div style="padding:12px;"><canvas id="bmn-sell-chart" height="180"></canvas></div>
+      </div>
+      <div class="block">
+        <div class="block-title b2bm">📊 B2B 월별 이익률 추이</div>
+        <div style="padding:12px;"><canvas id="bmn-margin-chart" height="180"></canvas></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="block">
+        <div class="block-title b2bm">🥧 B2B 채널별 매출 비중 <span id="bmn-pie-lbl"></span></div>
+        <div style="padding:12px;max-width:320px;margin:0 auto;"><canvas id="bmn-ch-pie" height="220"></canvas></div>
+      </div>
+      <div class="block">
+        <div class="block-title b2bm">🔄 B2B 플로우별 비중 <span id="bmn-flow-pie-lbl"></span></div>
+        <div style="padding:12px;max-width:320px;margin:0 auto;"><canvas id="bmn-flow-pie" height="220"></canvas></div>
+      </div>
+    </div>
+
   </div>
 </div>
 <script>
@@ -1134,6 +1157,7 @@ function onMonthChange(val) {
   renderMonthlyBuy(val);
   renderMonthlySell(val);
   renderMonthlyFlow(val);
+  renderMonthlyCharts(val);
 }
 
 // ── Week Dropdown ─────────────────────────────────────────────────────────────
@@ -1648,9 +1672,12 @@ function renderAllB2BMonthly(selM) {
 function onB2BMonthChange(val) {
   updateB2BMnRangeLbl(val);
   renderAllB2BMonthly(val);
+  renderB2BMonthlyCharts(val);
 }
 function onB2BMnChChange(val) {
-  renderAllB2BMonthly(document.getElementById('bmn-month-select').value);
+  const m = document.getElementById('bmn-month-select').value;
+  renderAllB2BMonthly(m);
+  renderB2BMonthlyCharts(m);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1758,6 +1785,159 @@ function _renderCorpDetailTable(prefix, cur, prv, compLabel) {
 
   document.getElementById(bodyId).innerHTML = h;
 }
+
+// ── Chart Instances ───────────────────────────────────────────────────────────
+const _charts = {};
+function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; } }
+
+const CHART_COLORS = {
+  blue:   '#2E74B5', red: '#E74C3C', green: '#27AE60',
+  orange: '#E67E22', purple: '#8E44AD', teal: '#17A589'
+};
+const PIE_COLORS = ['#2E74B5','#E74C3C','#27AE60','#F39C12','#8E44AD','#17A589'];
+
+// ── Monthly Charts ────────────────────────────────────────────────────────────
+function renderMonthlyCharts(selM) {
+  if (!D) return;
+  const months = D.monthly.months;
+  const labels = months.map(m => m.replace('2026-','') + '월');
+
+  // 1) 매입 추이 막대 + 이익률 꺾은선 (combo)
+  destroyChart('mn-buy-chart');
+  const buyQty  = months.map(m => D.monthly.buy.data[m]['ALL'].total.qty);
+  const margins = months.map(m => D.monthly.sell.data[m]['ALL'].total.margin);
+  _charts['mn-buy-chart'] = new Chart(document.getElementById('mn-buy-chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type:'bar',  label:'매입 수량', data: buyQty,  backgroundColor: months.map(m => m===selM ? '#E74C3C' : '#2E74B5'), yAxisID:'y' },
+        { type:'line', label:'이익률(%)', data: margins, borderColor:'#27AE60', backgroundColor:'rgba(39,174,96,0.1)', pointBackgroundColor:'#27AE60', pointRadius:4, tension:0.3, yAxisID:'y2' }
+      ]
+    },
+    options: {
+      responsive:true, interaction:{mode:'index'},
+      plugins:{ legend:{position:'top',labels:{font:{size:11},boxWidth:12}} },
+      scales:{
+        y:  { position:'left',  grid:{color:'#EEF1F8'}, ticks:{font:{size:10}} },
+        y2: { position:'right', grid:{drawOnChartArea:false}, ticks:{font:{size:10}, callback: v => v+'%'} }
+      }
+    }
+  });
+
+  // 2) 매출 추이 막대
+  destroyChart('mn-sell-chart');
+  const sellRev = months.map(m => Math.round(D.monthly.sell.data[m]['ALL'].total.rev / 1e6));
+  _charts['mn-sell-chart'] = new Chart(document.getElementById('mn-sell-chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label:'매출액(백만원)', data: sellRev,
+        backgroundColor: months.map(m => m===selM ? '#E74C3C' : '#2E74B5') }]
+    },
+    options: {
+      responsive:true,
+      plugins:{ legend:{position:'top',labels:{font:{size:11},boxWidth:12}} },
+      scales:{ y:{ grid:{color:'#EEF1F8'}, ticks:{font:{size:10}, callback: v => v+'M'} } }
+    }
+  });
+
+  // 3) 채널별 매출 파이 (선택 월 or 최신 월)
+  const pieM = (selM === '2026-CUM') ? months[months.length-1] : selM;
+  const pieLbl = pieM ? pieM.replace('2026-','')+'월' : '';
+  if(document.getElementById('mn-pie-lbl')) document.getElementById('mn-pie-lbl').textContent = pieLbl;
+  destroyChart('mn-ch-pie');
+  const chNames = ['B2B 매각','B2B MVNO','B2B Corp','B2C BGZT'];
+  const chLabels = ['① B2B 매각','② B2B MVNO','③ B2B Corp','④ B2C BGZT'];
+  const sellData = D.monthly.sell.data[pieM] ? D.monthly.sell.data[pieM]['ALL'] : null;
+  const chVals = chNames.map(c => sellData ? (sellData.channels[c]?.rev || 0) : 0);
+  _charts['mn-ch-pie'] = new Chart(document.getElementById('mn-ch-pie'), {
+    type:'doughnut',
+    data:{ labels:chLabels, datasets:[{ data:chVals, backgroundColor:PIE_COLORS }] },
+    options:{ responsive:true, plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}} } }
+  });
+
+  // 4) 플로우별 파이
+  if(document.getElementById('mn-flow-pie-lbl')) document.getElementById('mn-flow-pie-lbl').textContent = pieLbl;
+  destroyChart('mn-flow-pie');
+  const flowKeys   = ['C2B2C','C2B2B','B2B2B','B2B2C'];
+  const flowLabels = ['① C2B2C','② C2B2B','③ B2B2B','④ B2B2C'];
+  const flowData   = D.monthly.flow.data[pieM] ? D.monthly.flow.data[pieM]['ALL'] : null;
+  const flowVals   = flowKeys.map(k => flowData ? (flowData[k]?.rev || 0) : 0);
+  _charts['mn-flow-pie'] = new Chart(document.getElementById('mn-flow-pie'), {
+    type:'doughnut',
+    data:{ labels:flowLabels, datasets:[{ data:flowVals, backgroundColor:PIE_COLORS }] },
+    options:{ responsive:true, plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}} } }
+  });
+}
+
+// ── B2B Monthly Charts ────────────────────────────────────────────────────────
+function renderB2BMonthlyCharts(selM) {
+  if (!D) return;
+  const months = D.monthly.months;
+  const labels = months.map(m => m.replace('2026-','') + '월');
+  const ch = document.getElementById('bmn-ch-select')?.value || 'ALL';
+  const pieM = (selM === '2026-CUM') ? months[months.length-1] : selM;
+  const pieLbl = pieM ? pieM.replace('2026-','')+'월' : '';
+
+  // 1) B2B 월별 매출 막대
+  destroyChart('bmn-sell-chart');
+  const b2bRev = months.map(m => {
+    const d = D.monthly.b2b.data[m]?.[ch]; return d ? Math.round(d.sell.total.rev/1e6) : 0;
+  });
+  _charts['bmn-sell-chart'] = new Chart(document.getElementById('bmn-sell-chart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'B2B 매출(백만원)', data:b2bRev,
+      backgroundColor: months.map(m => (pieM&&m===pieM) ? '#E74C3C' : '#1A5276') }] },
+    options:{ responsive:true,
+      plugins:{ legend:{position:'top',labels:{font:{size:11},boxWidth:12}} },
+      scales:{ y:{ grid:{color:'#EEF1F8'}, ticks:{font:{size:10}, callback:v=>v+'M'} } }
+    }
+  });
+
+  // 2) B2B 이익률 꺾은선
+  destroyChart('bmn-margin-chart');
+  const b2bMargins = months.map(m => {
+    const d = D.monthly.b2b.data[m]?.[ch]; return d ? d.sell.total.margin : null;
+  });
+  _charts['bmn-margin-chart'] = new Chart(document.getElementById('bmn-margin-chart'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'이익률(%)', data:b2bMargins,
+      borderColor:'#27AE60', backgroundColor:'rgba(39,174,96,0.08)',
+      pointBackgroundColor:'#27AE60', pointRadius:5, tension:0.3, fill:true }] },
+    options:{ responsive:true,
+      plugins:{ legend:{position:'top',labels:{font:{size:11},boxWidth:12}} },
+      scales:{ y:{ grid:{color:'#EEF1F8'}, ticks:{font:{size:10}, callback:v=>v+'%'} } }
+    }
+  });
+
+  // 3) B2B 채널별 파이
+  if(document.getElementById('bmn-pie-lbl')) document.getElementById('bmn-pie-lbl').textContent = pieLbl;
+  destroyChart('bmn-ch-pie');
+  const b2bChs  = ['B2B 매각','B2B MVNO','B2B Corp'];
+  const b2bLbls = ['① B2B 매각','② B2B MVNO','③ B2B Corp'];
+  const b2bSellData = D.monthly.b2b.data[pieM]?.['ALL'];
+  const b2bChVals = b2bChs.map(c => b2bSellData ? (b2bSellData.sell.channels[c]?.rev||0) : 0);
+  _charts['bmn-ch-pie'] = new Chart(document.getElementById('bmn-ch-pie'), {
+    type:'doughnut',
+    data:{ labels:b2bLbls, datasets:[{ data:b2bChVals, backgroundColor:PIE_COLORS }] },
+    options:{ responsive:true, plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}} } }
+  });
+
+  // 4) B2B 플로우 파이
+  if(document.getElementById('bmn-flow-pie-lbl')) document.getElementById('bmn-flow-pie-lbl').textContent = pieLbl;
+  destroyChart('bmn-flow-pie');
+  const b2bFlowKeys  = ['C2B2B','B2B2B'];
+  const b2bFlowLbls  = ['① C2B2B','② B2B2B'];
+  const b2bFlowData  = D.monthly.b2b.data[pieM]?.['ALL'];
+  const b2bFlowVals  = b2bFlowKeys.map(k => b2bFlowData ? (b2bFlowData.flow[k]?.rev||0) : 0);
+  _charts['bmn-flow-pie'] = new Chart(document.getElementById('bmn-flow-pie'), {
+    type:'doughnut',
+    data:{ labels:b2bFlowLbls, datasets:[{ data:b2bFlowVals, backgroundColor:PIE_COLORS }] },
+    options:{ responsive:true, plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}} } }
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzT2q5XKWWuxEeCxhzxdZ4ODRh6w15CD39p2aGMpkXwawt4NSTyKnVDonGETliOQlpbew/exec';
 
@@ -1773,6 +1953,8 @@ function initDashboard() {
   renderMonthlyKPI(_curM); renderMonthlyBuy(_curM); renderMonthlySell(_curM); renderMonthlyFlow(_curM);
   renderAllB2BWeekly(_curW);
   renderAllB2BMonthly(_curM);
+  renderMonthlyCharts(_curM);
+  renderB2BMonthlyCharts(_curM);
 }
 
 // 로딩 오버레이 표시
