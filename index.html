@@ -1783,6 +1783,14 @@ document.head.insertAdjacentHTML('beforeend', `
                  glow    2.2s ease-in-out infinite;
       transform-style: preserve-3d;
     }
+    @keyframes spinEmoji {
+      from { display:inline-block; transform: rotate(0deg); }
+      to   { display:inline-block; transform: rotate(360deg); }
+    }
+    .spin-emoji {
+      display: inline-block;
+      animation: spinEmoji 1.2s linear infinite;
+    }
     #loading-text {
       margin-top: 28px;
       color: #ffffff;
@@ -1805,7 +1813,7 @@ document.head.insertAdjacentHTML('beforeend', `
 document.body.insertAdjacentHTML('afterbegin',
   '<div id="loading-overlay">' +
     '<img id="loading-logo" src="logo.png" alt="logo">' +
-    '<div id="loading-text">데이터 불러오는 중...</div>' +
+    '<div id="loading-text">데이터 로딩중 <span class="spin-emoji">🌀</span></div>' +
     '<div id="loading-sub">구글 시트에서 최신 데이터를 가져오고 있어요</div>' +
   '</div>'
 );
