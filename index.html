@@ -1567,8 +1567,6 @@ function renderB2BMonthlyFlow(selM) {
   const b0=(dat[selM]?dat[selM][ch]:null)||null, b1=prevM?((dat[prevM]?dat[prevM][ch]:null)||null):null;
   const f0=b0?.flow||null, f1=b1?.flow||null;
   document.getElementById('bmn-flow-lbl').textContent = mnLabel(selM);
-  const FLOWS=[['C2B2B','① C2B2B'],['B2B2B','② B2B2B']];
-  const noMoM=()=>'<td class="n neu">—</td><td class="n neu">—</td>';
   let h='', totQty0=0,totRev0=0,totPnl0=0, totQty1=0,totRev1=0,totPnl1=0;
   FLOWS.forEach(([k,lbl]) => {
     const c0=f0?.[k]||null, c1=f1?.[k]||null;
