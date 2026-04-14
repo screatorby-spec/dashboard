@@ -640,6 +640,10 @@ function switchTab(name, btn) {
     const m = document.getElementById('bmn-month-select').value || D.meta.current_month;
     updateB2BMnRangeLbl(m);
     renderAllB2BMonthly(m);
+    requestAnimationFrame(() => renderB2BMonthlyCharts(m));
+  } else if (name === 'monthly') {
+    const m = document.getElementById('month-select').value || D.meta.current_month;
+    requestAnimationFrame(() => renderMonthlyCharts(m));
   }
 }
 
@@ -1954,8 +1958,7 @@ function initDashboard() {
   renderMonthlyKPI(_curM); renderMonthlyBuy(_curM); renderMonthlySell(_curM); renderMonthlyFlow(_curM);
   renderAllB2BWeekly(_curW);
   renderAllB2BMonthly(_curM);
-  renderMonthlyCharts(_curM);
-  renderB2BMonthlyCharts(_curM);
+  // 차트는 탭 전환 시 렌더 (hidden canvas 문제 방지)
 }
 
 // 로딩 오버레이 표시
