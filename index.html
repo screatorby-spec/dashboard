@@ -395,6 +395,29 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
       </table></div>
     </div>
 
+
+    <!-- ── Monthly Charts ── -->
+    <div class="two-col" style="margin-top:4px;">
+      <div class="block">
+        <div class="block-title mn">📊 월별 매입 추이 &amp; 이익률</div>
+        <div style="padding:8px 12px;"><canvas id="mn-buy-chart" height="110"></canvas></div>
+      </div>
+      <div class="block">
+        <div class="block-title mn">💰 월별 매출 추이</div>
+        <div style="padding:8px 12px;"><canvas id="mn-sell-chart" height="110"></canvas></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="block">
+        <div class="block-title mn">🥧 채널별 매출 비중 <span id="mn-pie-lbl"></span></div>
+        <div style="padding:8px 12px;max-width:240px;margin:0 auto;"><canvas id="mn-ch-pie" height="120"></canvas></div>
+      </div>
+      <div class="block">
+        <div class="block-title mn">🔄 플로우별 매출 비중 <span id="mn-flow-pie-lbl"></span></div>
+        <div style="padding:8px 12px;max-width:240px;margin:0 auto;"><canvas id="mn-flow-pie" height="120"></canvas></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -565,21 +588,21 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
     <div class="two-col" style="margin-top:4px;">
       <div class="block">
         <div class="block-title b2bm">📊 B2B 월별 매출 추이</div>
-        <div style="padding:12px;"><canvas id="bmn-sell-chart" height="180"></canvas></div>
+        <div style="padding:8px 12px;"><canvas id="bmn-sell-chart" height="110"></canvas></div>
       </div>
       <div class="block">
         <div class="block-title b2bm">📊 B2B 월별 이익률 추이</div>
-        <div style="padding:12px;"><canvas id="bmn-margin-chart" height="180"></canvas></div>
+        <div style="padding:8px 12px;"><canvas id="bmn-margin-chart" height="110"></canvas></div>
       </div>
     </div>
     <div class="two-col">
       <div class="block">
         <div class="block-title b2bm">🥧 B2B 채널별 매출 비중 <span id="bmn-pie-lbl"></span></div>
-        <div style="padding:12px;max-width:320px;margin:0 auto;"><canvas id="bmn-ch-pie" height="220"></canvas></div>
+        <div style="padding:12px;max-width:240px;margin:0 auto;"><canvas id="bmn-ch-pie" height="120"></canvas></div>
       </div>
       <div class="block">
         <div class="block-title b2bm">🔄 B2B 플로우별 비중 <span id="bmn-flow-pie-lbl"></span></div>
-        <div style="padding:12px;max-width:320px;margin:0 auto;"><canvas id="bmn-flow-pie" height="220"></canvas></div>
+        <div style="padding:12px;max-width:240px;margin:0 auto;"><canvas id="bmn-flow-pie" height="120"></canvas></div>
       </div>
     </div>
 
