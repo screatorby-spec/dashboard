@@ -1334,6 +1334,33 @@ function onB2BWkChChange(val) {
 function renderB2BMonthlyKPI(selM) {
   const ch = getBMnCh();
   const dat = D.monthly.b2b.data;
+  // ── 누적 모드 ──
+  if (selM === '2026-CUM') {
+    const months = D.monthly.months;
+    const sumBuy  = {c2b:{qty:0,cost:0},b2b:{qty:0,cost:0},total:{qty:0,cost:0}};
+    const sumSell = {channels:{},total:{rev:0,profit:0}};
+    months.forEach(m => {
+      const b = dat[m]?dat[m][ch]:null; if(!b) return;
+      ['c2b','b2b','total'].forEach(k => { sumBuy[k].qty+=b.buy[k].qty; sumBuy[k].cost+=b.buy[k].cost; });
+      sumSell.total.rev+=b.sell.total.rev; sumSell.total.profit+=b.sell.total.profit;
+    });
+    sumBuy.total.cost=Math.round(sumBuy.total.cost);
+    const aov0 = sumBuy.total.qty ? Math.round(sumBuy.total.cost/sumBuy.total.qty) : null;
+    sumSell.total.margin = sumSell.total.rev>0 ? parseFloat((sumSell.total.profit/sumSell.total.rev*100).toFixed(1)) : 0;
+    document.getElementById('bmn-buy-qty').textContent  = N(sumBuy.total.qty)+'개';
+    document.getElementById('bmn-buy-cost').textContent = W(sumBuy.total.cost);
+    document.getElementById('bmn-buy-mom').innerHTML    = '';
+    document.getElementById('bmn-sell-rev').textContent    = W(sumSell.total.rev);
+    document.getElementById('bmn-sell-profit').textContent = '이익 '+W(sumSell.total.profit);
+    document.getElementById('bmn-sell-mom').innerHTML      = '';
+    document.getElementById('bmn-margin').textContent     = P(sumSell.total.margin);
+    document.getElementById('bmn-margin-sub').textContent = '이익 '+W(sumSell.total.profit);
+    document.getElementById('bmn-margin-mom').innerHTML   = '';
+    document.getElementById('bmn-aov').textContent     = aov0 ? W(aov0) : '—';
+    document.getElementById('bmn-aov-sub').textContent = '2026 누적 AOV';
+    document.getElementById('bmn-aov-mom').innerHTML   = '';
+    return;
+  }
   const prevM = getPrevMonth(selM);
   const b0=(dat[selM]?dat[selM][ch]:null)||null, b1=prevM?((dat[prevM]?dat[prevM][ch]:null)||null):null;
   const by0=b0?.buy||null, by1=b1?.buy||null;
@@ -1364,12 +1391,30 @@ function renderB2BMonthlyKPI(selM) {
 function renderB2BMonthlyBuy(selM) {
   const ch = getBMnCh();
   const dat = D.monthly.b2b.data;
+  const noMoM = () => '<td class="c" colspan="2" style="font-size:10px;">—</td>';
+  // ── 누적 모드 ──
+  if (selM === '2026-CUM') {
+    const months = D.monthly.months;
+    const sum = {c2b:{qty:0,cost:0},b2b:{qty:0,cost:0},total:{qty:0,cost:0}};
+    months.forEach(m => {
+      const b = dat[m]?dat[m][ch]:null; if(!b) return;
+      ['c2b','b2b','total'].forEach(k => { sum[k].qty+=b.buy[k].qty; sum[k].cost+=b.buy[k].cost; });
+    });
+    ['c2b','b2b','total'].forEach(k => { sum[k].cost=Math.round(sum[k].cost); });
+    sum.total.aov = sum.total.qty ? Math.round(sum.total.cost/sum.total.qty) : 0;
+    let h = '';
+    h += `<tr class="r-sub"><td colspan="2">① C2B 매입</td><td class="n">${N(sum.c2b.qty)}</td><td class="n">${W(sum.c2b.cost)}</td>${noMoM()}</tr>`;
+    h += `<tr class="r-sub"><td colspan="2">② B2B 매입</td><td class="n">${N(sum.b2b.qty)}</td><td class="n">${W(sum.b2b.cost)}</td>${noMoM()}</tr>`;
+    h += `<tr class="r-sep"><td colspan="6"></td></tr>`;
+    h += `<tr class="r-total"><td colspan="2">Total</td><td class="n">${N(sum.total.qty)}</td><td class="n">${W(sum.total.cost)}</td>${noMoM()}</tr>`;
+    document.getElementById('bmn-buy-body').innerHTML = h;
+    return;
+  }
   const prevM = getPrevMonth(selM);
   const b0=(dat[selM]?dat[selM][ch]:null)||null, b1=prevM?((dat[prevM]?dat[prevM][ch]:null)||null):null;
   const by0=b0?.buy||null, by1=b1?.buy||null;
   const mnLbl = mnLabel(selM);
   const prevLbl = prevM ? mnLabel(prevM) : '';
-  const noMoM = () => '<td class="c" colspan="2" style="font-size:10px;">—</td>';
 
   document.getElementById('bmn-lbl').textContent  = mnLbl;
   document.getElementById('bmn-lbl2').textContent = mnLbl;
@@ -1424,11 +1469,34 @@ function renderB2BMonthlyBuy(selM) {
 function renderB2BMonthlySell(selM) {
   const ch = getBMnCh();
   const dat = D.monthly.b2b.data;
+  const labels = {'B2B 매각':'① B2B 매각','B2B MVNO':'② B2B MVNO','B2B Corp':'③ B2B Corp'};
+  const noMoM = () => '<td class="c" colspan="2" style="font-size:10px;">—</td>';
+  // ── 누적 모드 ──
+  if (selM === '2026-CUM') {
+    const months = D.monthly.months;
+    const sumCh  = {'B2B 매각':{qty:0,rev:0,profit:0},'B2B MVNO':{qty:0,rev:0,profit:0},'B2B Corp':{qty:0,rev:0,profit:0}};
+    const sumTot = {rev:0,profit:0};
+    months.forEach(m => {
+      const b = dat[m]?dat[m][ch]:null; if(!b) return;
+      Object.keys(sumCh).forEach(c => {
+        const s = b.sell.channels[c]||{}; sumCh[c].qty+=s.qty||0; sumCh[c].rev+=s.rev||0; sumCh[c].profit+=s.profit||0;
+      });
+      sumTot.rev+=b.sell.total.rev; sumTot.profit+=b.sell.total.profit;
+    });
+    let h='';
+    Object.entries(labels).forEach(([key,lbl]) => {
+      const c=sumCh[key]; c.margin=c.rev>0?parseFloat((c.profit/c.rev*100).toFixed(1)):0;
+      h+=`<tr><td colspan="2">${lbl}</td><td class="n">${c.rev>0?W(c.rev):'—'}</td><td class="n">${c.rev>0?W(c.profit):'—'}</td><td class="n">${c.rev>0?P(c.margin):'—'}</td>${noMoM()}</tr>`;
+    });
+    const tm=sumTot.rev>0?parseFloat((sumTot.profit/sumTot.rev*100).toFixed(1)):0;
+    h+=`<tr class="r-sep"><td colspan="7"></td></tr>`;
+    h+=`<tr class="r-total"><td colspan="2">Total</td><td class="n">${W(sumTot.rev)}</td><td class="n">${W(sumTot.profit)}</td><td class="n">${P(tm)}</td>${noMoM()}</tr>`;
+    document.getElementById('bmn-sell-body').innerHTML=h;
+    return;
+  }
   const prevM = getPrevMonth(selM);
   const b0=(dat[selM]?dat[selM][ch]:null)||null, b1=prevM?((dat[prevM]?dat[prevM][ch]:null)||null):null;
   const s0=b0?.sell||null, s1=b1?.sell||null;
-  const labels = {'B2B 매각':'① B2B 매각','B2B MVNO':'② B2B MVNO','B2B Corp':'③ B2B Corp'};
-  const noMoM = () => '<td class="c" colspan="2" style="font-size:10px;">—</td>';
 
   let h = '';
   if (s1) {
@@ -1472,6 +1540,29 @@ function renderB2BMonthlySell(selM) {
 function renderB2BMonthlyFlow(selM) {
   const ch = getBMnCh();
   const dat = D.monthly.b2b.data;
+  const FLOWS=[['C2B2B','① C2B2B'],['B2B2B','② B2B2B']];
+  const noMoM=()=>'<td class="n neu">—</td><td class="n neu">—</td>';
+  // ── 누적 모드 ──
+  if (selM === '2026-CUM') {
+    document.getElementById('bmn-flow-lbl').textContent = '2026 누적';
+    const months = D.monthly.months;
+    const sum = {'C2B2B':{qty:0,rev:0,profit:0},'B2B2B':{qty:0,rev:0,profit:0}};
+    months.forEach(m => {
+      const b = dat[m]?dat[m][ch]:null; if(!b) return;
+      FLOWS.forEach(([k]) => { const f=b.flow[k]||{}; sum[k].qty+=f.qty||0; sum[k].rev+=f.rev||0; sum[k].profit+=f.profit||0; });
+    });
+    let h='', totQty=0,totRev=0,totPnl=0;
+    FLOWS.forEach(([k,lbl]) => {
+      const c=sum[k]; c.margin=c.rev>0?parseFloat((c.profit/c.rev*100).toFixed(1)):0;
+      totQty+=c.qty; totRev+=c.rev; totPnl+=c.profit;
+      h+=`<tr><td>${lbl}</td><td class="n">${c.rev>0?N(c.qty):'—'}</td><td class="n">${c.rev>0?W(c.rev):'—'}</td><td class="n">${c.rev>0?W(c.profit):'—'}</td><td class="n">${c.rev>0?P(c.margin):'—'}</td>${noMoM()}</tr>`;
+    });
+    const tm=totRev>0?parseFloat((totPnl/totRev*100).toFixed(1)):0;
+    h+=`<tr class="r-sep"><td colspan="7"></td></tr>`;
+    h+=`<tr class="r-total"><td>Total</td><td class="n">${totRev>0?N(totQty):'—'}</td><td class="n">${totRev>0?W(totRev):'—'}</td><td class="n">${totRev>0?W(totPnl):'—'}</td><td class="n">${totRev>0?P(tm):'—'}</td>${noMoM()}</tr>`;
+    document.getElementById('bmn-flow-body').innerHTML=h;
+    return;
+  }
   const prevM = getPrevMonth(selM);
   const b0=(dat[selM]?dat[selM][ch]:null)||null, b1=prevM?((dat[prevM]?dat[prevM][ch]:null)||null):null;
   const f0=b0?.flow||null, f1=b1?.flow||null;
@@ -1506,6 +1597,10 @@ function renderB2BMonthlyFlow(selM) {
 // ── B2B Monthly Init & Handlers ───────────────────────────────────────────
 function initB2BMonthSelect() {
   const sel = document.getElementById('bmn-month-select');
+  const cumOpt = document.createElement('option');
+  cumOpt.value = '2026-CUM';
+  cumOpt.textContent = '📊 2026 누적';
+  sel.appendChild(cumOpt);
   const allMs = [...D.monthly.months].reverse();
   allMs.forEach(key => {
     const opt = document.createElement('option');
@@ -1517,6 +1612,11 @@ function initB2BMonthSelect() {
   updateB2BMnRangeLbl(D.meta.current_month);
 }
 function updateB2BMnRangeLbl(selM) {
+  if (selM === '2026-CUM') {
+    const last = D.monthly.months[D.monthly.months.length - 1];
+    document.getElementById('bmn-range-lbl').textContent = `(2026년 1월 ~ ${mnLabel(last)} 누적)`;
+    return;
+  }
   const prev = getPrevMonth(selM);
   document.getElementById('bmn-range-lbl').textContent =
     prev ? `(${mnLabel(prev)} → ${mnLabel(selM)})` : `(${mnLabel(selM)})`;
