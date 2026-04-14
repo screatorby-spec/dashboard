@@ -73,6 +73,8 @@ body{font-family:'Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif;
 /* ── Block ── */
 .block{background:var(--card);border-radius:10px;border:1px solid var(--border);
        box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:14px;}
+.block .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.block .tbl-scroll .tbl{min-width:500px;}
 .block-title{
   padding:9px 14px;font-size:11px;font-weight:800;letter-spacing:.3px;
   display:flex;align-items:center;justify-content:space-between;
@@ -136,9 +138,21 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
 .week-control .wk-hint{font-size:10px;color:var(--muted);margin-left:auto;}
 .week-control .wk-range{font-size:11px;color:var(--blue);font-weight:600;}
 
+/* ── 테이블 수평 스크롤 래퍼 ── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tbl-wrap .tbl{min-width:480px;}
+
 @media(max-width:900px){
   .two-col{grid-template-columns:1fr;}
   .kpi-strip{grid-template-columns:1fr 1fr;}
+  .main{padding:10px 10px;}
+  .tab-bar{padding:0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}
+  .tab-btn{padding:10px 14px;font-size:12px;white-space:nowrap;}
+  .page-header h1{font-size:13px;}
+  .page-header p{display:none;}
+  .period-badge{font-size:10px;padding:4px 10px;}
+  .kpi-val{font-size:17px;}
+  .block-title{font-size:10px;}
 }
 
 .tab-btn.active.b2b-weekly{color:#145A32;border-bottom-color:#27AE60;}
@@ -224,14 +238,14 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <option value="태블릿">📟 태블릿</option>
         </select>
       </div>
-        <table class="tbl">
+        <div class="tbl-scroll"><table class="tbl">
           <thead><tr>
             <th class="left" colspan="2">구분</th>
             <th id="wh2">13W</th><th id="wh1">12W</th><th id="wh0">11W</th>
             <th>WoW (Q)</th><th>WoW (%)</th>
           </tr></thead>
           <tbody id="wb-body"></tbody>
-        </table>
+        </table></div>
       </div>
       <!-- Weekly 매출 -->
       <div class="block">
@@ -242,14 +256,14 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <option value="태블릿">📟 태블릿</option>
         </select>
       </div>
-        <table class="tbl">
+        <div class="tbl-scroll"><table class="tbl">
           <thead><tr>
             <th class="left" colspan="2">채널</th>
             <th>매출액</th><th>총이익</th><th>이익률</th>
             <th>WoW (P)</th><th>WoW (%)</th>
           </tr></thead>
           <tbody id="ws-body"></tbody>
-        </table>
+        </table></div>
       </div>
     </div>
 
@@ -263,14 +277,14 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <option value="태블릿">📟 태블릿</option>
         </select>
       </div>
-      <table class="tbl">
+      <div class="tbl-scroll"><table class="tbl">
         <thead><tr>
           <th class="left">형태</th>
           <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th>
           <th>WoW (P)</th><th>WoW (%)</th>
         </tr></thead>
         <tbody id="wf-body"></tbody>
-      </table>
+      </table></div>
     </div>
 
   </div>
@@ -326,14 +340,14 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <option value="태블릿">📟 태블릿</option>
         </select>
       </div>
-        <table class="tbl">
+        <div class="tbl-scroll"><table class="tbl">
           <thead><tr>
             <th class="left" colspan="2">구분</th>
             <th>매입량</th><th>매입 원가</th><th>AOV</th>
             <th>YoY (Q)</th><th>YoY (%)</th>
           </tr></thead>
           <tbody id="mb-body"></tbody>
-        </table>
+        </table></div>
       </div>
       <!-- Monthly 매출 -->
       <div class="block">
@@ -344,14 +358,14 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <option value="태블릿">📟 태블릿</option>
         </select>
       </div>
-        <table class="tbl">
+        <div class="tbl-scroll"><table class="tbl">
           <thead><tr>
             <th class="left" colspan="2">채널</th>
             <th>매출액</th><th>총이익</th><th>이익률</th>
             <th>YoY (P)</th><th>YoY (%)</th>
           </tr></thead>
           <tbody id="ms-body"></tbody>
-        </table>
+        </table></div>
       </div>
     </div>
 
@@ -365,14 +379,14 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <option value="태블릿">📟 태블릿</option>
         </select>
       </div>
-      <table class="tbl">
+      <div class="tbl-scroll"><table class="tbl">
         <thead><tr>
           <th class="left">형태</th>
           <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th>
           <th>MoM (P)</th><th>MoM (%)</th>
         </tr></thead>
         <tbody id="mf-body"></tbody>
-      </table>
+      </table></div>
     </div>
 
   </div>
@@ -433,14 +447,14 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
     <!-- B2B Weekly 매출 -->
     <div class="block">
       <div class="block-title b2bw">📅 [B2B Weekly] 매출 <span id="bwk-lbl2"></span></div>
-      <table class="tbl">
+      <div class="tbl-scroll"><table class="tbl">
         <thead><tr>
           <th class="left">채널</th>
           <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th>
           <th>WoW (P)</th><th>WoW (%)</th>
         </tr></thead>
         <tbody id="bws-body"></tbody>
-      </table>
+      </table></div>
     </div>
 
     <!-- B2B Corp 판매처별 상세 (B2B Corp 선택 시만 표시) -->
@@ -455,7 +469,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <th class="sortable" data-col="margin" data-dir="desc" onclick="sortCorpTable('bwk',this)">이익률<span class="sort-icon"></span></th>
         </tr></thead>
         <tbody id="bwk-corp-body"></tbody>
-      </table>
+      </table></div>
     </div>
 
   </div>
@@ -515,14 +529,14 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
     <!-- B2B Monthly 매출 -->
     <div class="block">
       <div class="block-title b2bm">📆 [B2B Monthly] 매출 <span id="bmn-lbl2"></span></div>
-      <table class="tbl">
+      <div class="tbl-scroll"><table class="tbl">
         <thead><tr>
           <th class="left">채널</th>
           <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th>
           <th>MoM (P)</th><th>MoM (%)</th>
         </tr></thead>
         <tbody id="bms-body"></tbody>
-      </table>
+      </table></div>
     </div>
 
     <!-- B2B Corp 판매처별 상세 (B2B Corp 선택 시만 표시) -->
@@ -537,7 +551,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <th class="sortable" data-col="margin" data-dir="desc" onclick="sortCorpTable('bmn',this)">이익률<span class="sort-icon"></span></th>
         </tr></thead>
         <tbody id="bmn-corp-body"></tbody>
-      </table>
+      </table></div>
     </div>
 
   </div>
