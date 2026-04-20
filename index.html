@@ -588,21 +588,21 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
     <div class="two-col" style="margin-top:4px;">
       <div class="block">
         <div class="block-title b2bm">📊 B2B 월별 매출 추이</div>
-        <div style="padding:8px 12px;"><canvas id="bmn-sell-chart" height="110"></canvas></div>
+        <div style="padding:4px 8px;"><canvas id="bmn-sell-chart" height="72"></canvas></div>
       </div>
       <div class="block">
         <div class="block-title b2bm">📊 B2B 월별 이익률 추이</div>
-        <div style="padding:8px 12px;"><canvas id="bmn-margin-chart" height="110"></canvas></div>
+        <div style="padding:4px 8px;"><canvas id="bmn-margin-chart" height="72"></canvas></div>
       </div>
     </div>
     <div class="two-col">
       <div class="block">
         <div class="block-title b2bm">🥧 B2B 채널별 매출 비중 <span id="bmn-pie-lbl"></span></div>
-        <div style="padding:12px;max-width:240px;margin:0 auto;"><canvas id="bmn-ch-pie" height="120"></canvas></div>
+        <div style="padding:4px 8px;max-width:160px;margin:0 auto;"><canvas id="bmn-ch-pie" height="80"></canvas></div>
       </div>
       <div class="block">
         <div class="block-title b2bm">🔄 B2B 플로우별 비중 <span id="bmn-flow-pie-lbl"></span></div>
-        <div style="padding:12px;max-width:240px;margin:0 auto;"><canvas id="bmn-flow-pie" height="120"></canvas></div>
+        <div style="padding:4px 8px;max-width:160px;margin:0 auto;"><canvas id="bmn-flow-pie" height="80"></canvas></div>
       </div>
     </div>
 
@@ -1917,9 +1917,11 @@ function renderB2BMonthlyCharts(selM) {
     type:'bar',
     data:{ labels, datasets:[{ label:'B2B 매출(백만원)', data:b2bRev,
       backgroundColor: months.map(m => (pieM&&m===pieM) ? '#E74C3C' : '#1A5276') }] },
-    options:{ responsive:true,
-      plugins:{ legend:{position:'top',labels:{font:{size:11},boxWidth:12}} },
-      scales:{ y:{ grid:{color:'#EEF1F8'}, ticks:{font:{size:10}, callback:v=>v+'M'} } }
+    options:{ responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{top:2,bottom:2} },
+      plugins:{ legend:{position:'top',labels:{font:{size:10},boxWidth:10,padding:4}} },
+      scales:{ y:{ grid:{color:'#EEF1F8'}, ticks:{font:{size:9}, callback:v=>v+'M'} },
+               x:{ ticks:{font:{size:9}} } }
     }
   });
 
@@ -1932,10 +1934,12 @@ function renderB2BMonthlyCharts(selM) {
     type:'line',
     data:{ labels, datasets:[{ label:'이익률(%)', data:b2bMargins,
       borderColor:'#27AE60', backgroundColor:'rgba(39,174,96,0.08)',
-      pointBackgroundColor:'#27AE60', pointRadius:5, tension:0.3, fill:true }] },
-    options:{ responsive:true,
-      plugins:{ legend:{position:'top',labels:{font:{size:11},boxWidth:12}} },
-      scales:{ y:{ grid:{color:'#EEF1F8'}, ticks:{font:{size:10}, callback:v=>v+'%'} } }
+      pointBackgroundColor:'#27AE60', pointRadius:4, tension:0.3, fill:true }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{top:2,bottom:2} },
+      plugins:{ legend:{position:'top',labels:{font:{size:10},boxWidth:10,padding:4}} },
+      scales:{ y:{ grid:{color:'#EEF1F8'}, ticks:{font:{size:9}, callback:v=>v+'%'} },
+               x:{ ticks:{font:{size:9}} } }
     }
   });
 
@@ -1949,7 +1953,9 @@ function renderB2BMonthlyCharts(selM) {
   _charts['bmn-ch-pie'] = new Chart(document.getElementById('bmn-ch-pie'), {
     type:'doughnut',
     data:{ labels:b2bLbls, datasets:[{ data:b2bChVals, backgroundColor:PIE_COLORS }] },
-    options:{ responsive:true, plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}} } }
+    options:{ responsive:true, maintainAspectRatio:false,
+      layout:{ padding:2 },
+      plugins:{ legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:3}} } }
   });
 
   // 4) B2B 플로우 파이
@@ -1962,7 +1968,9 @@ function renderB2BMonthlyCharts(selM) {
   _charts['bmn-flow-pie'] = new Chart(document.getElementById('bmn-flow-pie'), {
     type:'doughnut',
     data:{ labels:b2bFlowLbls, datasets:[{ data:b2bFlowVals, backgroundColor:PIE_COLORS }] },
-    options:{ responsive:true, plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}} } }
+    options:{ responsive:true, maintainAspectRatio:false,
+      layout:{ padding:2 },
+      plugins:{ legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:3}} } }
   });
 }
 
