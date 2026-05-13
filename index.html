@@ -350,7 +350,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <thead><tr>
             <th class="left" colspan="2">구분</th>
             <th>매입량</th><th>매입 원가</th><th>AOV</th>
-            <th>YoY (Q)</th><th>YoY (%)</th>
+            <th>MoM (Q)</th><th>MoM (%)</th>
           </tr></thead>
           <tbody id="mb-body"></tbody>
         </table></div>
@@ -368,7 +368,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
           <thead><tr>
             <th class="left" colspan="2">채널</th>
             <th>매출액</th><th>총이익</th><th>이익률</th>
-            <th>YoY (P)</th><th>YoY (%)</th>
+            <th>MoM (P)</th><th>MoM (%)</th>
           </tr></thead>
           <tbody id="ms-body"></tbody>
         </table></div>
@@ -381,7 +381,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
       <div class="tbl-scroll"><table class="tbl">
         <thead><tr>
           <th class="left">카테고리</th>
-          <th>수량</th><th>수량비중</th><th>매출액</th><th>매출비중</th><th>총이익</th><th>이익률</th>
+          <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th><th>수량비중</th><th>매출비중</th>
         </tr></thead>
         <tbody id="mn-cat-body"></tbody>
       </table></div>
@@ -1198,12 +1198,12 @@ function renderMonthlyCatSell(selM) {
     const revShare = (key !== 'ALL' && totalRev > 0) ? (rev / totalRev * 100).toFixed(1) : '—';
     const rowCls   = key === 'ALL' ? 'r-total' : '';
     h += `<tr class="${rowCls}"><td class="left">${label}</td>
-      <td class="n">${show ? N(qty)+'개' : '—'}</td>
-      <td class="n">${qtyShare !== '—' ? qtyShare+'%' : '—'}</td>
+      <td class="n">${show ? N(qty) : '—'}</td>
       <td class="n">${show ? W(rev) : '—'}</td>
-      <td class="n">${revShare !== '—' ? revShare+'%' : '—'}</td>
       <td class="n">${show ? W(profit) : '—'}</td>
-      <td class="n">${show ? P(margin) : '—'}</td></tr>`;
+      <td class="n">${show ? P(margin) : '—'}</td>
+      <td class="n">${qtyShare !== '—' ? qtyShare+'%' : '—'}</td>
+      <td class="n">${revShare !== '—' ? revShare+'%' : '—'}</td></tr>`;
   });
   document.getElementById('mn-cat-body').innerHTML = h;
 }
