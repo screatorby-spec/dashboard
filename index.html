@@ -381,8 +381,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
       <div class="tbl-scroll"><table class="tbl">
         <thead><tr>
           <th class="left">카테고리</th>
-          <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th>
-          <th>MoM (P)</th><th>MoM (%)</th>
+          <th>수량</th><th>수량비중</th><th>매출액</th><th>매출비중</th><th>총이익</th><th>이익률</th>
         </tr></thead>
         <tbody id="mn-cat-body"></tbody>
       </table></div>
@@ -1157,9 +1156,8 @@ function getCatQty(data, cat) {
 function renderMonthlyCatSell(selM) {
   if (!D) return;
   const sd = D.monthly.sell.data;
-  const noMoM = () => '<td class="c" colspan="2" style="font-size:10px;">—</td>';
   const cats = [
-    { key:'ALL',    label:'• 전체' },
+    { key:'ALL',     label:'• 전체' },
     { key:'스마트폰', label:'📱 스마트폰' },
     { key:'태블릿',  label:'📟 태블릿' },
   ];
@@ -1168,44 +1166,44 @@ function renderMonthlyCatSell(selM) {
 
   let h = '';
 
+  // 각 카테고리 수치 계산 (누적/일반 공통)
+  let rows = [];
   if (selM === '2026-CUM') {
     const months = D.monthly.months;
-    cats.forEach(({ key, label }) => {
-      let totQty=0, totRev=0, totProfit=0;
-      months.forEach(m => {
-        totQty   += getCatQty(sd, key) ? getCatQty(sd, key) : 0; // fallback
-        if (sd[m]?.[key]) { totRev += sd[m][key].total.rev; totProfit += sd[m][key].total.profit; }
-      });
-      // 누적 qty: 각 월 채널 합산
-      totQty = months.reduce((s, m) => s + getCatQty(sd[m], key), 0);
-      const totMargin = totRev > 0 ? parseFloat((totProfit/totRev*100).toFixed(1)) : 0;
-      const rowCls = key==='ALL' ? 'r-total' : '';
-      h += `<tr class="${rowCls}"><td class="left">${label}</td>
-        <td class="n">${N(totQty)}개</td>
-        <td class="n">${W(totRev)}</td>
-        <td class="n">${W(totProfit)}</td>
-        <td class="n">${P(totMargin)}</td>
-        ${noMoM()}</tr>`;
+    rows = cats.map(({ key, label }) => {
+      const qty    = months.reduce((s, m) => s + getCatQty(sd[m], key), 0);
+      const rev    = months.reduce((s, m) => s + (sd[m]?.[key]?.total.rev    || 0), 0);
+      const profit = months.reduce((s, m) => s + (sd[m]?.[key]?.total.profit || 0), 0);
+      const margin = rev > 0 ? parseFloat((profit / rev * 100).toFixed(1)) : 0;
+      return { key, label, qty, rev, profit, margin };
     });
-    document.getElementById('mn-cat-body').innerHTML = h;
-    return;
+  } else {
+    rows = cats.map(({ key, label }) => {
+      const cur    = sd[selM]?.[key] || null;
+      const qty    = getCatQty(sd[selM], key);
+      const rev    = cur ? cur.total.rev    : 0;
+      const profit = cur ? cur.total.profit : 0;
+      const margin = cur ? cur.total.margin : 0;
+      return { key, label, qty, rev, profit, margin, hasData: !!cur };
+    });
   }
 
-  const prevM = getPrevMonth(selM);
-  cats.forEach(({ key, label }) => {
-    const cur = sd[selM]?.[key] || null;
-    const prv = prevM ? (sd[prevM]?.[key] || null) : null;
-    const curQty = getCatQty(sd[selM], key);
-    const prvQty = getCatQty(sd[prevM], key);
-    const revDiff  = (cur && prv) ? cur.total.rev - prv.total.rev : null;
-    const revPct   = (cur && prv) ? sp(cur.total.rev, prv.total.rev) : null;
-    const rowCls   = key==='ALL' ? 'r-total' : '';
+  // 전체 합계 (비중 계산 기준)
+  const totalQty = rows.find(r => r.key==='ALL')?.qty || 0;
+  const totalRev = rows.find(r => r.key==='ALL')?.rev || 0;
+
+  rows.forEach(({ key, label, qty, rev, profit, margin, hasData }) => {
+    const show = (selM === '2026-CUM') ? (qty > 0 || rev > 0) : hasData;
+    const qtyShare = (key !== 'ALL' && totalQty > 0) ? (qty / totalQty * 100).toFixed(1) : '—';
+    const revShare = (key !== 'ALL' && totalRev > 0) ? (rev / totalRev * 100).toFixed(1) : '—';
+    const rowCls   = key === 'ALL' ? 'r-total' : '';
     h += `<tr class="${rowCls}"><td class="left">${label}</td>
-      <td class="n">${cur ? N(curQty)+'개' : '—'}</td>
-      <td class="n">${cur ? W(cur.total.rev) : '—'}</td>
-      <td class="n">${cur ? W(cur.total.profit) : '—'}</td>
-      <td class="n">${cur ? P(cur.total.margin) : '—'}</td>
-      ${revDiff!=null ? wowCells(revDiff, revPct) : noMoM()}</tr>`;
+      <td class="n">${show ? N(qty)+'개' : '—'}</td>
+      <td class="n">${qtyShare !== '—' ? qtyShare+'%' : '—'}</td>
+      <td class="n">${show ? W(rev) : '—'}</td>
+      <td class="n">${revShare !== '—' ? revShare+'%' : '—'}</td>
+      <td class="n">${show ? W(profit) : '—'}</td>
+      <td class="n">${show ? P(margin) : '—'}</td></tr>`;
   });
   document.getElementById('mn-cat-body').innerHTML = h;
 }
