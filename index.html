@@ -375,6 +375,19 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
       </div>
     </div>
 
+    <!-- Monthly 카테고리별 매출 -->
+    <div class="block">
+      <div class="block-title mn">📦 [Monthly] 카테고리별 매출 <span id="mn-cat-lbl"></span></div>
+      <div class="tbl-scroll"><table class="tbl">
+        <thead><tr>
+          <th class="left">카테고리</th>
+          <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th>
+          <th>MoM (P)</th><th>MoM (%)</th>
+        </tr></thead>
+        <tbody id="mn-cat-body"></tbody>
+      </table></div>
+    </div>
+
     <!-- Monthly 플로우 -->
     <div class="block">
       <div class="block-title mn">
@@ -1134,6 +1147,69 @@ function renderMonthlySell(selM) {
   document.getElementById('ms-body').innerHTML = h;
 }
 
+// ── Monthly 카테고리별 매출 ──────────────────────────────────────────────────
+function getCatQty(data, cat) {
+  if (!data || !data[cat]) return 0;
+  return ['B2B 매각','B2B MVNO','B2B Corp','B2C BGZT']
+    .reduce((s, ch) => s + (data[cat].channels?.[ch]?.qty || 0), 0);
+}
+
+function renderMonthlyCatSell(selM) {
+  if (!D) return;
+  const sd = D.monthly.sell.data;
+  const noMoM = () => '<td class="c" colspan="2" style="font-size:10px;">—</td>';
+  const cats = [
+    { key:'ALL',    label:'• 전체' },
+    { key:'스마트폰', label:'📱 스마트폰' },
+    { key:'태블릿',  label:'📟 태블릿' },
+  ];
+  if (document.getElementById('mn-cat-lbl'))
+    document.getElementById('mn-cat-lbl').textContent = selM === '2026-CUM' ? '(2026 누적)' : mnLabel(selM);
+
+  let h = '';
+
+  if (selM === '2026-CUM') {
+    const months = D.monthly.months;
+    cats.forEach(({ key, label }) => {
+      let totQty=0, totRev=0, totProfit=0;
+      months.forEach(m => {
+        totQty   += getCatQty(sd, key) ? getCatQty(sd, key) : 0; // fallback
+        if (sd[m]?.[key]) { totRev += sd[m][key].total.rev; totProfit += sd[m][key].total.profit; }
+      });
+      // 누적 qty: 각 월 채널 합산
+      totQty = months.reduce((s, m) => s + getCatQty(sd[m], key), 0);
+      const totMargin = totRev > 0 ? parseFloat((totProfit/totRev*100).toFixed(1)) : 0;
+      const rowCls = key==='ALL' ? 'r-total' : '';
+      h += `<tr class="${rowCls}"><td class="left">${label}</td>
+        <td class="n">${N(totQty)}개</td>
+        <td class="n">${W(totRev)}</td>
+        <td class="n">${W(totProfit)}</td>
+        <td class="n">${P(totMargin)}</td>
+        ${noMoM()}</tr>`;
+    });
+    document.getElementById('mn-cat-body').innerHTML = h;
+    return;
+  }
+
+  const prevM = getPrevMonth(selM);
+  cats.forEach(({ key, label }) => {
+    const cur = sd[selM]?.[key] || null;
+    const prv = prevM ? (sd[prevM]?.[key] || null) : null;
+    const curQty = getCatQty(sd[selM], key);
+    const prvQty = getCatQty(sd[prevM], key);
+    const revDiff  = (cur && prv) ? cur.total.rev - prv.total.rev : null;
+    const revPct   = (cur && prv) ? sp(cur.total.rev, prv.total.rev) : null;
+    const rowCls   = key==='ALL' ? 'r-total' : '';
+    h += `<tr class="${rowCls}"><td class="left">${label}</td>
+      <td class="n">${cur ? N(curQty)+'개' : '—'}</td>
+      <td class="n">${cur ? W(cur.total.rev) : '—'}</td>
+      <td class="n">${cur ? W(cur.total.profit) : '—'}</td>
+      <td class="n">${cur ? P(cur.total.margin) : '—'}</td>
+      ${revDiff!=null ? wowCells(revDiff, revPct) : noMoM()}</tr>`;
+  });
+  document.getElementById('mn-cat-body').innerHTML = h;
+}
+
 // ── Month Helpers ────────────────────────────────────────────────────────────
 function getPrevMonth(key) {
   if (!key) return null;
@@ -1184,6 +1260,7 @@ function onMonthChange(val) {
   renderMonthlyKPI(val);
   renderMonthlyBuy(val);
   renderMonthlySell(val);
+  renderMonthlyCatSell(val);
   renderMonthlyFlow(val);
   renderMonthlyCharts(val);
 }
@@ -1980,7 +2057,7 @@ function initDashboard() {
   renderWeeklyKPI(_curW); renderWeeklyBuy(_curW); renderWeeklySell(_curW);
   renderWeeklyFlow(_curW);
   const _curM = D.meta.current_month;
-  renderMonthlyKPI(_curM); renderMonthlyBuy(_curM); renderMonthlySell(_curM); renderMonthlyFlow(_curM);
+  renderMonthlyKPI(_curM); renderMonthlyBuy(_curM); renderMonthlySell(_curM); renderMonthlyCatSell(_curM); renderMonthlyFlow(_curM);
   renderAllB2BWeekly(_curW);
   renderAllB2BMonthly(_curM);
   // 차트는 탭 전환 시 렌더 (hidden canvas 문제 방지)
