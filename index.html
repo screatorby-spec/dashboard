@@ -55,7 +55,7 @@ body{font-family:'Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif;
 .tab-view.active{display:block;}
 
 /* ── Main ── */
-.main{padding:16px 20px;max-width:1400px;margin:0 auto;}
+.main{padding:16px clamp(12px,2vw,32px);width:min(96vw,1800px);margin:0 auto;}
 
 /* ── KPI Strip ── */
 .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
@@ -1065,12 +1065,13 @@ function renderMonthlySell(selM) {
     const sd=D.monthly.sell.data, cumAll=D.monthly.sell.cumulative;
     const months=D.monthly.months;
     const cum=cumAll[selCat]||{total:{rev:0,profit:0,margin:0}};
+    const cumQty = months.reduce((s,m)=>s+getCatQty(sd[m], selCat), 0);
     const CUM_2025_REV=4342472740;
     const cumRevDiff=cum.total.rev-CUM_2025_REV, cumRevPct=sp(cum.total.rev,CUM_2025_REV);
     const noMoM=()=>'<td class="c" colspan="2" style="font-size:10px;">—</td>';
     let h='';
     h+=`<tr class="r-cum"><td colspan="2">• 2026 총 누적</td>
-      <td class="n">${N(cum.total.qty)}</td><td class="n">${W(cum.total.rev)}</td><td class="n">${W(cum.total.profit)}</td><td class="n">${P(cum.total.margin)}</td>
+      <td class="n">${N(cumQty)}</td><td class="n">${W(cum.total.rev)}</td><td class="n">${W(cum.total.profit)}</td><td class="n">${P(cum.total.margin)}</td>
       ${wowCells(cumRevDiff,cumRevPct)}</tr>`;
     h+=`<tr class="r-sep"><td colspan="8"></td></tr>`;
     h+=`<tr style="background:#E8EDF5;font-size:10px;font-weight:700;color:var(--navy);">
@@ -1087,7 +1088,7 @@ function renderMonthlySell(selM) {
       const diff=(cur&&prev)?cur.total.rev-prev.total.rev:null;
       const pct=(cur&&prev)?sp(cur.total.rev,prev.total.rev):null;
       h+=`<tr class="r-sub"><td colspan="2">• ${mnLabel(mn)}</td>
-        <td class="n">${cur?N(cur.total.qty):'—'}</td>
+        <td class="n">${cur?N(getCatQty(sd[mn], selCat)):'—'}</td>
         <td class="n">${cur?W(cur.total.rev):'—'}</td>
         <td class="n">${cur?W(cur.total.profit):'—'}</td>
         <td class="n">${cur?P(cur.total.margin):'—'}</td>
@@ -1099,6 +1100,7 @@ function renderMonthlySell(selM) {
   // ── 일반 모드 ──
   const sd=D.monthly.sell.data, cumAll=D.monthly.sell.cumulative;
   const cum=cumAll[selCat]||{total:{rev:0,profit:0,margin:0}};
+  const cumQtyN = D.monthly.months.reduce((s,m)=>s+getCatQty(sd[m], selCat), 0);
   const prevM=getPrevMonth(selM);
   const cur=(sd[selM]?sd[selM][selCat]:null)||null, prv=prevM?((sd[prevM]?sd[prevM][selCat]:null)||null):null;
   const prevLbl=prevM?mnLabel(prevM):'', mnLbl=mnLabel(selM);
@@ -1115,7 +1117,7 @@ function renderMonthlySell(selM) {
 
   let h = '';
   h += `<tr class="r-cum"><td colspan="2">• 2026 총 누적</td>
-    <td class="n">${N(cum.total.qty)}</td><td class="n">${W(cum.total.rev)}</td><td class="n">${W(cum.total.profit)}</td><td class="n">${P(cum.total.margin)}</td>
+    <td class="n">${N(cumQtyN)}</td><td class="n">${W(cum.total.rev)}</td><td class="n">${W(cum.total.profit)}</td><td class="n">${P(cum.total.margin)}</td>
     ${wowCells(cumRevDiff, cumRevPct)}</tr>`;
   h += `<tr class="r-sep"><td colspan="8"></td></tr>`;
   h += `<tr style="background:#E8EDF5;font-size:10px;font-weight:700;color:var(--navy);">
@@ -1131,7 +1133,7 @@ function renderMonthlySell(selM) {
     const prvRevDiff = pprv2 ? prv.total.rev - pprv2.total.rev : null;
     const prvRevPct  = pprv2 ? sp(prv.total.rev, pprv2.total.rev) : null;
     h += `<tr class="r-prev"><td colspan="2">• ${prevLbl} (전월)</td>
-      <td class="n">${N(prv.total.qty)}</td><td class="n">${W(prv.total.rev)}</td><td class="n">${W(prv.total.profit)}</td><td class="n">${P(prv.total.margin)}</td>
+      <td class="n">${N(getCatQty(sd[prevM], selCat))}</td><td class="n">${W(prv.total.rev)}</td><td class="n">${W(prv.total.profit)}</td><td class="n">${P(prv.total.margin)}</td>
       ${prvRevDiff!=null ? wowCells(prvRevDiff, prvRevPct) : '<td class="c" colspan="2" style="font-size:10px;">—</td>'}</tr>`;
     h += `<tr class="r-sep"><td colspan="8"></td></tr>`;
   }
@@ -1146,7 +1148,7 @@ function renderMonthlySell(selM) {
   h += `<tr class="r-sep"><td colspan="8"></td></tr>`;
   const momRDiff=(cur&&prv)?cur.total.rev-prv.total.rev:null, momRPct=(cur&&prv)?sp(cur.total.rev,prv.total.rev):null;
   h += `<tr class="r-total"><td colspan="2">• ${mnLbl} 매출 총액</td>
-    <td class="n">${cur?N(cur.total.qty):'—'}</td><td class="n">${cur?W(cur.total.rev):'—'}</td><td class="n">${cur?W(cur.total.profit):'—'}</td><td class="n">${cur?P(cur.total.margin):'—'}</td>
+    <td class="n">${cur?N(getCatQty(sd[selM], selCat)):'—'}</td><td class="n">${cur?W(cur.total.rev):'—'}</td><td class="n">${cur?W(cur.total.profit):'—'}</td><td class="n">${cur?P(cur.total.margin):'—'}</td>
     ${momRDiff!=null ? wowCells(momRDiff,momRPct) : noMoM()}</tr>`;
 
   document.getElementById('ms-body').innerHTML = h;
