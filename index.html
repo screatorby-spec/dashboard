@@ -265,7 +265,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
         <div class="tbl-scroll"><table class="tbl">
           <thead><tr>
             <th class="left" colspan="2">채널</th>
-            <th>매출액</th><th>총이익</th><th>이익률</th>
+            <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th>
             <th>WoW (P)</th><th>WoW (%)</th>
           </tr></thead>
           <tbody id="ws-body"></tbody>
@@ -367,7 +367,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
         <div class="tbl-scroll"><table class="tbl">
           <thead><tr>
             <th class="left" colspan="2">채널</th>
-            <th>매출액</th><th>총이익</th><th>이익률</th>
+            <th>수량</th><th>매출액</th><th>총이익</th><th>이익률</th>
             <th>MoM (P)</th><th>MoM (%)</th>
           </tr></thead>
           <tbody id="ms-body"></tbody>
@@ -625,7 +625,7 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
 let D = null; // 데이터는 fetch 후 주입
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const W  = n => '₩' + Math.round(n).toLocaleString('ko-KR');
-const N  = n => Math.round(n).toLocaleString('ko-KR');
+const N  = n => (n==null||isNaN(n)) ? '—' : Math.round(n).toLocaleString('ko-KR');
 const P  = n => n != null ? n.toFixed(1) + '%' : '—';
 const sp = (a,b) => b ? parseFloat(((a-b)/b*100).toFixed(1)) : null;
 
@@ -767,13 +767,16 @@ function renderWeeklySell(selW) {
   ['B2B 매각','B2B MVNO','B2B Corp','B2C BGZT'].forEach(ch => {
     const c0=cur?.channels?.[ch], c1=prv?.channels?.[ch];
     h += `<tr><td colspan="2">${labels[ch]}</td>
+      <td class="n">${c0 ? N(c0.qty) : '—'}</td>
       <td class="n">${c0 ? W(c0.rev) : '—'}</td>
       <td class="n">${c0 ? W(c0.profit) : '—'}</td>
       <td class="n">${c0 ? P(c0.margin) : '—'}</td>
       ${(c0&&c1) ? wowCells(c0.rev-c1.rev, sp(c0.rev,c1.rev)) : noData()}</tr>`;
   });
-  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  h += `<tr class="r-sep"><td colspan="8"></td></tr>`;
+  const wsTotQty = cur ? ['B2B 매각','B2B MVNO','B2B Corp','B2C BGZT'].reduce((sum,c)=>sum+(cur.channels?.[c]?.qty||0),0) : 0;
   h += `<tr class="r-total"><td colspan="2">Total</td>
+    <td class="n">${cur ? N(wsTotQty) : '—'}</td>
     <td class="n">${cur ? W(cur.total.rev) : '—'}</td>
     <td class="n">${cur ? W(cur.total.profit) : '—'}</td>
     <td class="n">${cur ? P(cur.total.margin) : '—'}</td>
@@ -1067,11 +1070,12 @@ function renderMonthlySell(selM) {
     const noMoM=()=>'<td class="c" colspan="2" style="font-size:10px;">—</td>';
     let h='';
     h+=`<tr class="r-cum"><td colspan="2">• 2026 총 누적</td>
-      <td class="n">${W(cum.total.rev)}</td><td class="n">${W(cum.total.profit)}</td><td class="n">${P(cum.total.margin)}</td>
+      <td class="n">${N(cum.total.qty)}</td><td class="n">${W(cum.total.rev)}</td><td class="n">${W(cum.total.profit)}</td><td class="n">${P(cum.total.margin)}</td>
       ${wowCells(cumRevDiff,cumRevPct)}</tr>`;
-    h+=`<tr class="r-sep"><td colspan="7"></td></tr>`;
+    h+=`<tr class="r-sep"><td colspan="8"></td></tr>`;
     h+=`<tr style="background:#E8EDF5;font-size:10px;font-weight:700;color:var(--navy);">
       <td colspan="2" style="padding:4px 10px;">구분</td>
+      <td class="n" style="padding:4px 10px;">수량</td>
       <td class="n" style="padding:4px 10px;">매출액</td>
       <td class="n" style="padding:4px 10px;">총이익</td>
       <td class="n" style="padding:4px 10px;">이익률</td>
@@ -1083,6 +1087,7 @@ function renderMonthlySell(selM) {
       const diff=(cur&&prev)?cur.total.rev-prev.total.rev:null;
       const pct=(cur&&prev)?sp(cur.total.rev,prev.total.rev):null;
       h+=`<tr class="r-sub"><td colspan="2">• ${mnLabel(mn)}</td>
+        <td class="n">${cur?N(cur.total.qty):'—'}</td>
         <td class="n">${cur?W(cur.total.rev):'—'}</td>
         <td class="n">${cur?W(cur.total.profit):'—'}</td>
         <td class="n">${cur?P(cur.total.margin):'—'}</td>
@@ -1110,11 +1115,12 @@ function renderMonthlySell(selM) {
 
   let h = '';
   h += `<tr class="r-cum"><td colspan="2">• 2026 총 누적</td>
-    <td class="n">${W(cum.total.rev)}</td><td class="n">${W(cum.total.profit)}</td><td class="n">${P(cum.total.margin)}</td>
+    <td class="n">${N(cum.total.qty)}</td><td class="n">${W(cum.total.rev)}</td><td class="n">${W(cum.total.profit)}</td><td class="n">${P(cum.total.margin)}</td>
     ${wowCells(cumRevDiff, cumRevPct)}</tr>`;
-  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  h += `<tr class="r-sep"><td colspan="8"></td></tr>`;
   h += `<tr style="background:#E8EDF5;font-size:10px;font-weight:700;color:var(--navy);">
     <td colspan="2" style="padding:4px 10px;">구분</td>
+    <td class="n" style="padding:4px 10px;">수량</td>
     <td class="n" style="padding:4px 10px;">매출액</td>
     <td class="n" style="padding:4px 10px;">총이익</td>
     <td class="n" style="padding:4px 10px;">이익률</td>
@@ -1125,22 +1131,22 @@ function renderMonthlySell(selM) {
     const prvRevDiff = pprv2 ? prv.total.rev - pprv2.total.rev : null;
     const prvRevPct  = pprv2 ? sp(prv.total.rev, pprv2.total.rev) : null;
     h += `<tr class="r-prev"><td colspan="2">• ${prevLbl} (전월)</td>
-      <td class="n">${W(prv.total.rev)}</td><td class="n">${W(prv.total.profit)}</td><td class="n">${P(prv.total.margin)}</td>
+      <td class="n">${N(prv.total.qty)}</td><td class="n">${W(prv.total.rev)}</td><td class="n">${W(prv.total.profit)}</td><td class="n">${P(prv.total.margin)}</td>
       ${prvRevDiff!=null ? wowCells(prvRevDiff, prvRevPct) : '<td class="c" colspan="2" style="font-size:10px;">—</td>'}</tr>`;
-    h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+    h += `<tr class="r-sep"><td colspan="8"></td></tr>`;
   }
   if (!cur) { document.getElementById('ms-body').innerHTML = h; return; }
 
   ['B2B 매각','B2B MVNO','B2B Corp','B2C BGZT'].forEach(ch => {
     const c0=cur.channels[ch], c1=prv?.channels?.[ch];
     h += `<tr><td colspan="2">${labels[ch]}</td>
-      <td class="n">${c0?W(c0.rev):'—'}</td><td class="n">${c0?W(c0.profit):'—'}</td><td class="n">${c0?P(c0.margin):'—'}</td>
+      <td class="n">${c0?N(c0.qty):'—'}</td><td class="n">${c0?W(c0.rev):'—'}</td><td class="n">${c0?W(c0.profit):'—'}</td><td class="n">${c0?P(c0.margin):'—'}</td>
       ${(c0&&c1)?wowCells(c0.rev-c1.rev, sp(c0.rev,c1.rev)):noMoM()}</tr>`;
   });
-  h += `<tr class="r-sep"><td colspan="7"></td></tr>`;
+  h += `<tr class="r-sep"><td colspan="8"></td></tr>`;
   const momRDiff=(cur&&prv)?cur.total.rev-prv.total.rev:null, momRPct=(cur&&prv)?sp(cur.total.rev,prv.total.rev):null;
   h += `<tr class="r-total"><td colspan="2">• ${mnLbl} 매출 총액</td>
-    <td class="n">${cur?W(cur.total.rev):'—'}</td><td class="n">${cur?W(cur.total.profit):'—'}</td><td class="n">${cur?P(cur.total.margin):'—'}</td>
+    <td class="n">${cur?N(cur.total.qty):'—'}</td><td class="n">${cur?W(cur.total.rev):'—'}</td><td class="n">${cur?W(cur.total.profit):'—'}</td><td class="n">${cur?P(cur.total.margin):'—'}</td>
     ${momRDiff!=null ? wowCells(momRDiff,momRPct) : noMoM()}</tr>`;
 
   document.getElementById('ms-body').innerHTML = h;
