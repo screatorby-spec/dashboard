@@ -1918,13 +1918,31 @@ const CHART_COLORS = {
 };
 const PIE_COLORS = ['#2E74B5','#E74C3C','#27AE60','#F39C12','#8E44AD','#17A589'];
 
-// 스택 막대 위에 총 수량 라벨을 그려주는 플러그인
+// 스택 막대 내부(채널별) + 상단(총합) 숫자 라벨 플러그인
 const totalLabelPlugin = {
   id: 'totalLabel',
   afterDatasetsDraw(chart) {
     const { ctx } = chart;
     const dsCount = chart.data.datasets.length;
     if (dsCount === 0) return;
+
+    // 채널별 세그먼트 내부 숫자
+    chart.data.datasets.forEach((ds, dsIdx) => {
+      const meta = chart.getDatasetMeta(dsIdx);
+      meta.data.forEach((bar, i) => {
+        const val = ds.data[i] || 0;
+        if (!val || bar.height < 14) return; // 너무 작은 구간엔 라벨 생략(겹침 방지)
+        ctx.save();
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(val.toLocaleString('ko-KR'), bar.x, (bar.y + bar.base) / 2);
+        ctx.restore();
+      });
+    });
+
+    // 막대 상단 총합 숫자
     const lastMeta = chart.getDatasetMeta(dsCount - 1);
     chart.data.labels.forEach((_, i) => {
       let total = 0;
@@ -1987,7 +2005,7 @@ function renderWeeklyC2BChart(selW) {
         }
       },
       scales: {
-        x: { stacked:true, grid:{ display:false }, ticks:{ font:{size:10} } },
+        x: { stacked:true, grid:{ display:false }, ticks:{ font:{size:13, weight:'bold'}, color:'#1F3864' } },
         y: { stacked:true, grid:{ color:'#EEF1F8' }, ticks:{ font:{size:10} } }
       }
     }
