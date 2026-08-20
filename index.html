@@ -293,6 +293,12 @@ td.dn{color:#1565C0 !important;font-weight:700 !important;}
       </table></div>
     </div>
 
+    <!-- Weekly C2B 매입 수량 추이 -->
+    <div class="block">
+      <div class="block-title wk">📊 [Weekly] C2B 매입 수량 추이 (최대 5주) <span id="wk-c2b-chart-lbl"></span></div>
+      <div style="padding:8px 12px;"><canvas id="wk-c2b-chart" height="110"></canvas></div>
+    </div>
+
   </div>
 </div>
 
@@ -667,7 +673,10 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   document.getElementById('view-' + name).classList.add('active');
   // Re-render on tab switch to ensure fresh state
-  if (name === 'b2b-weekly') {
+  if (name === 'weekly') {
+    const w = document.getElementById('week-select').value || D.meta.current_week;
+    requestAnimationFrame(() => renderWeeklyC2BChart(w));
+  } else if (name === 'b2b-weekly') {
     const w = document.getElementById('bwk-week-select').value || D.meta.current_week;
     updateB2BWkRangeLbl(w);
     renderAllB2BWeekly(w);
@@ -1298,9 +1307,11 @@ function onWeekChange(val) {
   renderWeeklyBuy(val);
   renderWeeklySell(val);
   renderWeeklyFlow(val);
+  renderWeeklyC2BChart(val);
 }
 function onWBuySort(val) {
   renderWeeklyBuy(document.getElementById('week-select').value);
+  renderWeeklyC2BChart(document.getElementById('week-select').value);
 }
 function onWSellSort(val) {
   renderWeeklySell(document.getElementById('week-select').value);
@@ -1907,6 +1918,82 @@ const CHART_COLORS = {
 };
 const PIE_COLORS = ['#2E74B5','#E74C3C','#27AE60','#F39C12','#8E44AD','#17A589'];
 
+// 스택 막대 위에 총 수량 라벨을 그려주는 플러그인
+const totalLabelPlugin = {
+  id: 'totalLabel',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    const dsCount = chart.data.datasets.length;
+    if (dsCount === 0) return;
+    const lastMeta = chart.getDatasetMeta(dsCount - 1);
+    chart.data.labels.forEach((_, i) => {
+      let total = 0;
+      chart.data.datasets.forEach(ds => total += (ds.data[i] || 0));
+      const bar = lastMeta.data[i];
+      if (!bar) return;
+      ctx.save();
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = '#1F3864';
+      ctx.textAlign = 'center';
+      ctx.fillText(total.toLocaleString('ko-KR'), bar.x, bar.y - 8);
+      ctx.restore();
+    });
+  }
+};
+
+// ── Weekly C2B 매입 수량 스택 차트 (내폰판매/인앱매입/보상매입, 최대 5주) ─────────
+function renderWeeklyC2BChart(selW) {
+  if (!D) return;
+  const selCat = document.getElementById('wb-sort')?.value || 'ALL';
+  const dat = D.weekly.buy.data;
+  const weekKeys = [];
+  for (let i = 4; i >= 0; i--) {
+    const k = getWeekKey(selW, -i);
+    if (k && dat[k]) weekKeys.push(k);
+  }
+  const labels = weekKeys.map(k => wkLabel(k));
+  const chDefs = [
+    { name:'내폰판매', color: CHART_COLORS.blue },
+    { name:'인앱매입', color: CHART_COLORS.green },
+    { name:'보상매입', color: CHART_COLORS.orange }
+  ];
+  const datasets = chDefs.map(def => ({
+    label: def.name,
+    data: weekKeys.map(k => (dat[k]?.[selCat]?.c2b?.detail?.[def.name]?.qty) || 0),
+    backgroundColor: def.color,
+    stack: 'c2b'
+  }));
+
+  const lbl = document.getElementById('wk-c2b-chart-lbl');
+  if (lbl) lbl.textContent = weekKeys.length ? `${wkLabel(weekKeys[0])} ~ ${wkLabel(weekKeys[weekKeys.length-1])}` : '';
+
+  destroyChart('wk-c2b-chart');
+  _charts['wk-c2b-chart'] = new Chart(document.getElementById('wk-c2b-chart'), {
+    type: 'bar',
+    data: { labels, datasets },
+    plugins: [totalLabelPlugin],
+    options: {
+      responsive: true,
+      layout: { padding: { top: 20 } },
+      plugins: {
+        legend: { position:'top', labels:{ font:{size:11}, boxWidth:12 } },
+        tooltip: {
+          callbacks: {
+            footer: (items) => {
+              const total = items.reduce((s,it) => s + it.parsed.y, 0);
+              return '총 C2B 수량: ' + total.toLocaleString('ko-KR');
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked:true, grid:{ display:false }, ticks:{ font:{size:10} } },
+        y: { stacked:true, grid:{ color:'#EEF1F8' }, ticks:{ font:{size:10} } }
+      }
+    }
+  });
+}
+
 // ── Monthly Charts ────────────────────────────────────────────────────────────
 function renderMonthlyCharts(selM) {
   if (!D) return;
@@ -2062,6 +2149,7 @@ function initDashboard() {
   const _curW = D.meta.current_week;
   renderWeeklyKPI(_curW); renderWeeklyBuy(_curW); renderWeeklySell(_curW);
   renderWeeklyFlow(_curW);
+  requestAnimationFrame(() => renderWeeklyC2BChart(_curW));
   const _curM = D.meta.current_month;
   renderMonthlyKPI(_curM); renderMonthlyBuy(_curM); renderMonthlySell(_curM); renderMonthlyCatSell(_curM); renderMonthlyFlow(_curM);
   renderAllB2BWeekly(_curW);
